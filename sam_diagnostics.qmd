@@ -1,0 +1,884 @@
+---
+title: "SAM Diagnostics for the Jack Mackerel Assessment"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+author: "Niels T. Hintzen"
+format:
+  html:
+    code-fold: true
+    code-summary: "Show code"
+    fig-cap-location: bottom
+    number-sections: true
+    theme: readable
+    toc: true
+    toc-depth: 3
+    toc-location: right
+    lightbox: true
+bibliography: refs.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE, message = FALSE, echo = FALSE,
+  fig.width = 9, fig.height = 6
+)
+
+diag_dir <- normalizePath(
+  file.path(dirname(knitr::current_input(dir = TRUE)), "diagnostics"),
+  winslash = "/"
+)
+
+show_diag <- function(file, caption = NULL, width = "100%") {
+  path <- file.path(diag_dir, file)
+  knitr::include_graphics(path)
+}
+```
+
+# Introduction {#sec-intro}
+
+## Background and motivation
+
+The Chilean jack mackerel (*Trachurus murphyi*) stock in the South Pacific is assessed
+annually by the SPRFMO Scientific Committee using the Joint Jack Mackerel Model (JJM),
+an age-structured statistical catch-at-age model implemented in AD Model Builder
+[@fournier2012ad]. Two competing stock-structure hypotheses are evaluated in parallel:
+hypothesis H1 (a single shared stock ranging from Peru to the offshore zone) and
+hypothesis H2 (a separate far-northern stock off Peru combined with a central-southern
+stock off Chile). The SC13 base model (`h1_1.14` and `h2_1.14`) constitutes the
+assessment configuration on which the current MSE programme is being conditioned.
+
+### The SPRFMO Jack Mackerel MSE programme
+
+A Management Strategy Evaluation (MSE) process for CJM has been underway within
+SPRFMO for several years and entered a critical delivery phase in 2026. The JM MSE
+Task Team (TT), chaired by J. Ianelli, is working through a structured programme
+following the Carruthers et al. (2024) MSE roadmap framework. 
+
+Ten working papers are planned across these three venues (JM-WP-BM-01 through
+JM-WP-SC14-03). The work described in this document feeds primarily into
+**JM-WP-BM-01** (*SC13 Base Assessment Model: Documentation and Simplified
+Alternatives for OM Conditioning*) and **JM-WP-BM-04** (*Stock–Recruitment,
+Environmental Scenarios, and OM Design*).
+
+A central challenge identified in BM-01 is that the SC13 JJM model is **difficult to
+transfer directly into an MSE Operating Model** for four reasons:
+
+1. **Time-varying selectivity** — JJM estimates annual selectivity within blocks, but
+   the block structure and its projection behaviour must be simplified and fixed for OM
+   conditioning;
+2. **Dynamic reference points** — JJM's $B_\text{MSY}$ and $F_\text{MSY}$ are
+   re-derived each year and cannot be directly carried into a forward-simulation OM
+   without specifying which biological period they represent;
+3. **Differing fitting and projection assumptions** — the estimation model and the
+   projection model in JJM use different assumptions (e.g. about recruitment) that must
+   be reconciled before conditioning;
+4. **Mixed stock-structure differences** — H1 and H2 require consistent treatment of
+   the far-northern component to allow meaningful comparison across hypotheses.
+
+BM-01 proposes four simplified alternatives to address these issues: (§6.1) block-based
+selectivity, (§6.2) a single S–R relationship per hypothesis without regime splitting,
+(§6.3) fixed static reference points, and (§6.4) harmonised northern treatment across
+H1 and H2. The TT is scheduled to **agree the selectivity block structure and the
+reference point approach at TT-03 (30 April 2026)**, with the selectivity question
+narrowed to at most two candidates at TT-02 (9 April 2026).
+
+For the stock-recruitment relationship (BM-04), the current working prior for H1 is
+steepness $h = 0.65$ with recruitment variability $\sigma_R = 0.6$. An ENSO
+offshore-drop scenario is also planned as a key robustness test. The OM will be
+implemented and validated across three platforms — FLR, RTMB, and OpenMSE (DLMtool /
+MSEtool) — with cross-platform validation addressed in JM-WP-SC14-02.
+
+### Role of this SAM analysis
+
+The SAM model is applied here to the H1 configuration as an **independent diagnostic
+tool**, not as a replacement for JJM. Its state-space structure and internal
+data-weighting make it particularly well suited to addressing the open OM-design
+questions described above — questions that are difficult to resolve from within the
+JJM framework alone:
+
+- **Selectivity** (@sec-blocks): SAM's annual random-walk F provides an objective,
+  statistically grounded basis for choosing how many selectivity blocks are needed and
+  where their boundaries should fall, weighted by the catch volume in each period.
+- **Productivity and reference points** (@sec-productivity): The period-specific
+  Beverton-Holt steepness estimated here can be compared against the working prior
+  $h = 0.65$ and used to compute block-specific $F_\text{MSY}$ for the OM.
+- **Index uncertainty and fleet conflict** (@sec-q, @sec-conflict): SAM's internally
+  estimated observation variances and the cross-fleet residual diagnostics identify
+  which of the seven abundance indices carry the most information, which are
+  redundant, and which show systematic trends — directly informing BM-03 (*Indices of
+  Abundance: Review and Standardisation*) and the choice of MP input data streams
+  for BM-04.
+
+## The State-Space Assessment Model (SAM)
+
+### Overview and ICES context
+
+SAM was developed at the Technical University of Denmark and is maintained as an open
+R package (`stockassessment`). It has become the **standard stock assessment model for
+the majority of ICES-advised stocks**, including North Sea herring, North Sea cod,
+mackerel, blue whiting, and many others. Although it is not yet widely used outside
+the North Atlantic, its mathematical foundations are general and apply directly to
+multi-fleet pelagic assessments such as CJM.
+
+The core idea is to treat the unobserved true population state — numbers-at-age and
+fishing mortality — as **latent random variables** that evolve through time according
+to a process model, while catch and survey observations are linked to those states
+through an observation model with estimated error variances. This formulation is known
+as a **state-space model** and is solved using the Kalman filter / smoother algorithm
+combined with the Laplace approximation, implemented in the **TMB** (Template Model
+Builder) automatic differentiation framework [@kristensen2016tmb]. The result is a
+computationally efficient, fully differentiable likelihood that propagates both process
+and observation uncertainty into all derived quantities.
+
+### Population process model
+
+Log-abundance at age follows a random-walk survival equation with process noise:
+
+$$
+\log N_{1,t} \sim \mathcal{N}\!\bigl(\mu_R,\,\sigma_R^2\bigr)
+\qquad\text{(recruitment, treated as a free random effect)}
+$$
+
+$$
+\log N_{a,t} = \log N_{a-1,\,t-1} - Z_{a-1,\,t-1} + \varepsilon_{a,t},
+\quad \varepsilon_{a,t} \sim \mathcal{N}(0,\sigma_a^2)
+$$
+
+The process error $\varepsilon_{a,t}$ absorbs year-to-year deviations from the
+deterministic survival equation — deviations that in a classical statistical
+catch-at-age model would be forced into the residuals of the catch or survey
+likelihood. This means SAM can fit the data more honestly without over-shrinking
+recruitment or distorting the F trajectory to compensate for a poor-fitting year.
+
+Fishing mortality also evolves as a latent random walk:
+
+$$
+\log F_{a,t} = \log F_{a,t-1} + \eta_{a,t},
+\quad \eta_{a,t} \sim \mathcal{N}(0,\sigma_{F,k}^2)
+$$
+
+Ages that share the same variance parameter $\sigma_{F,k}^2$ are **coupled**: they
+move together through time, effectively defining a selectivity group. The number of
+F-variance groups, and which ages belong to each group, is a key user choice (see
+@sec-mse-config). Fewer groups impose a smoother, more constrained selectivity; more
+groups allow independent trajectories per age.
+
+### Observation model
+
+Catch-at-age observations are log-normal:
+
+$$
+\log\hat{C}_{a,t,f} \sim \mathcal{N}\!\bigl(\log C_{a,t,f}^{\text{pred}},\,\sigma_{C,f}^2\bigr)
+$$
+
+Survey biomass indices (as used here, since the CJM surveys are treated as integrated
+biomass signals) are:
+
+$$
+\log\hat{I}_{s,t} \sim \mathcal{N}\!\bigl(\log(q_s\,\hat{B}_{s,t}),\,\sigma_{I,s}^2\bigr)
+$$
+
+where $\hat{B}_{s,t}$ is the model-predicted exploitable biomass for survey $s$. The
+**observation variances $\sigma^2$ are estimated from the data**, not fixed externally.
+This is a fundamental difference from JJM, where data weights are set by the analyst.
+SAM's internally estimated variances provide a direct, objective measure of the
+effective weight each data source receives — large variance = low effective weight.
+
+### Uncertainty propagation
+
+Because SAM uses the Laplace approximation, the full posterior of all latent states
+and derived quantities (SSB, $\bar{F}$, recruitment) is approximated as multivariate
+normal. This gives analytical confidence intervals for all time-series outputs without
+requiring MCMC sampling, making it practical to produce annual uncertainty estimates
+for SSB, F, and recruitment routinely.
+
+## The JJM Model
+
+JJM is a forward-projection statistical catch-at-age model. Numbers-at-age evolve
+deterministically as:
+
+$$
+N_{a,t} = \begin{cases}
+R_t & a = 1 \\
+N_{a-1,\,t-1} \exp\!\bigl(-Z_{a-1,\,t-1}\bigr) & 1 < a < A \\
+N_{A-1,\,t-1} \exp\!\bigl(-Z_{A-1,\,t-1}\bigr) + N_{A,\,t-1}\exp\!\bigl(-Z_{A,\,t-1}\bigr) & a = A
+\end{cases}
+$$
+
+where $Z_{a,t} = M_{a,t} + F_{a,t}$. Fishing mortality is decomposed over fleets as:
+
+$$
+F_{a,t} = \sum_{f=1}^{F} s_{a,f}\,\Gamma_{f,t}
+$$
+
+with $s_{a,f}$ selectivity and $\Gamma_{f,t}$ the fully-selected fishing mortality.
+Predicted catch follows the Baranov equation [@hilborn1992quantitative]:
+
+$$
+C_{a,t,f} = \frac{s_{a,f}\,\Gamma_{f,t}}{Z_{a,t}}\,N_{a,t}
+  \bigl(1 - \exp(-Z_{a,t})\bigr)
+$$
+
+Survey indices are modelled as:
+
+$$
+I_{s,t} = q_s \sum_a v_{a,s}\,N_{a,t}\,w_{a,t}
+$$
+
+Observed compositions (age and length) are fitted with a multinomial likelihood.
+Data weights are specified externally (e.g. Francis reweighting, @francis2011data).
+
+## Key differences between JJM and SAM
+
+| Feature | JJM | SAM |
+|---|---|---|
+| **Framework** | Deterministic forward projection (ADMB) | State-space Kalman filter (TMB) |
+| **Process error** | None — $N$ fully determined by catch | Random walk in $\log N$ and $\log F$ |
+| **Composition data** | Age and length proportions (multinomial) | Age proportions only (log-normal) |
+| **Data weighting** | External (Francis, input ESS) | Internal — $\sigma^2$ estimated |
+| **Selectivity** | Constant within user-defined year blocks | Annual random walk; blocks optional |
+| **Catchability** | Fixed $q$ per survey | Fixed $q$; residual trends reveal drift |
+| **Reference points** | Computed internally per selectivity block via SPR/YPR | Externally estimated |
+| **Uncertainty** | Hessian-based delta method | Laplace approximation; MCMC optional |
+
+: Key differences between JJM and SAM {#tbl-compare}
+
+## SAM in the MSE context {#sec-mse-config}
+
+The MSE process for CJM requires an Operating Model (OM) that can generate plausible
+stock trajectories under different harvest control rules. The OM is typically
+conditioned on the assessment model: its parameter estimates, uncertainty structure,
+and dynamic assumptions are inherited directly from the assessment. Three open
+questions are particularly important for the OM design, and SAM provides evidence
+for each.
+
+### 1. Selectivity: constant blocks versus annual random walk
+
+JJM parameterises selectivity as constant within user-defined year blocks. The OM
+inherits these blocks directly, meaning the OM's F trajectory in the projection period
+is governed by the selectivity pattern of the most recent block. If that block does not
+accurately represent the current fleet behaviour — because it is too long, or because
+the true selectivity has been gradually shifting — the OM will be biased.
+
+SAM estimates selectivity annually via a random walk and therefore reveals *when* the
+selectivity shape changed significantly. The block analysis in @sec-blocks translates
+those SAM-estimated change points into suggested block boundaries for JJM, ranked by
+importance. The OM designer can then choose the minimum number of blocks that captures
+the dominant selectivity regimes without overfitting.
+
+The key trade-off is:
+
+- **Too few blocks**: selectivity is over-smoothed; the OM misrepresents the current
+  fleet's age targeting and will generate biased F projections.
+- **Too many blocks**: each block is estimated from fewer data, increasing uncertainty
+  in selectivity; the OM carries more estimation noise into projections.
+
+### 2. Biological reference points: fixed versus time-varying
+
+JJM already computes biological reference points ($F_\text{MSY}$, $B_\text{MSY}$,
+$B_{40\%}$) internally via equilibrium per-recruit (SPR/YPR) analysis within each
+selectivity block. Because JJM estimates a separate selectivity pattern for each
+block, the reference points it reports are inherently block-specific: changing the
+selectivity block structure directly changes the reference point estimates. This is
+the mechanism through which time-varying reference points enter the assessment —
+there is no need to compute them externally.
+
+The key question for the OM is therefore not *how* to obtain time-varying reference
+points, but *whether* the JJM block-specific values show meaningful variation that
+should be preserved in the OM, versus collapsing to a single set. The productivity
+analysis in @sec-productivity provides complementary evidence: if the Beverton-Holt
+steepness $h$ shows a statistically supported shift across periods, this corroborates
+using the block-specific reference points rather than a time-series average.
+Conversely, if steepness is stable across the full time series, a single set of
+reference points (derived from the most recent or most representative selectivity
+block) is sufficient for the OM.
+
+In practice, the OM designer should:
+
+1. Confirm which JJM selectivity blocks are carried forward into the OM (informed by
+   @sec-blocks).
+2. Use the JJM-reported $F_\text{MSY}$ and $B_\text{MSY}$ values for each retained
+   block directly as the block-specific reference points.
+3. Cross-check whether the magnitude of variation in those block-specific reference
+   points is large relative to their estimation uncertainty — if not, a single set
+   is adequate.
+
+### 3. Which data sources carry the most uncertainty?
+
+The OM must replicate the observation process — how future monitoring data will be
+generated and how uncertain they will be. The relative magnitude of SAM's internally
+estimated observation variances (@sec-obsvars) directly answers this question: data
+sources with large $\hat{\sigma}^2$ contribute little to the current assessment and
+will contribute little to future assessments under the same design. The runs test
+(@sec-runs) identifies sources with systematic, non-random residuals — these are
+candidates for structural changes in the OM's observation model (e.g. time-varying
+$q$). Together, these diagnostics provide the evidence base for deciding which surveys
+to include in the OM's observation model and what variance to assign them.
+
+# Data and Configuration {#sec-data}
+
+## Input data
+
+The SAM fit uses the H1 single-stock FLStock (`h1_1.14`) prepared for the 2025
+assessment cycle. There are four catch fleets and seven biomass-only survey indices
+(@tbl-surveys).
+
+| Index | Type | SAM treatment |
+|---|---|---|
+| Chile_AcousCS | Acoustic survey (central-south Chile) | Total biomass index |
+| Chile_AcousN | Acoustic survey (north Chile) | Total biomass index |
+| Chile_CPUE | Chilean CPUE | Exploitable biomass index |
+| DEPM | Daily egg production method (spawning biomass) | SSB index |
+| Peru_Acoustic | Acoustic survey (Peru) | Total biomass index |
+| Peru_CPUE | Peruvian CPUE | Exploitable biomass index |
+| Offshore_CPUE | Offshore pelagic trawl CPUE | Exploitable biomass index |
+
+: Survey indices used in the SAM fit {#tbl-surveys}
+
+All indices are treated as biomass indices (age = "all") using `FLIndex` objects with
+`type = "biomass"`. Acoustic surveys index total biomass; CPUE indices (Chile, Peru,
+Offshore) are fitted as exploitable biomass, reflecting selective targeting of fish; 
+DEPM is fitted as an SSB index as it directly estimates egg production
+from spawning adults.
+
+## SAM control configuration
+
+Four catch fleets share age-coupled F states while they are estimated independent from 
+each other and all have separate variance parameters. Surveys receive independent observation
+variance indices. Selectivity (modelled as states: F) is free to vary by age group
+within each fleet.
+
+# Standard Diagnostics {#sec-standard}
+
+## Stock trajectory
+
+The full state-space trajectory with 95% confidence intervals. Recruitment, SSB, and
+mean F are estimated jointly with their process uncertainty.
+
+```{r fig-trajectory}
+#| fig-cap: "Model-estimated SSB (top), mean F (middle), and recruitment (bottom) with 95% confidence intervals."
+show_diag("h1_stock_trajectory.png")
+```
+
+```{r fig-trajectory-zoom}
+#| fig-cap: "Recent (post-2002) stock trajectory. Shaded band = 95% CI."
+show_diag("h1_stock_trajectory_zoom.png")
+```
+
+## Observation variances {#sec-obsvars}
+
+SAM estimates observation variances internally. Small values indicate a data source is
+given high weight; large values indicate the model discounts that source. All catch datasets are given high weight with the offshore trawl receiving highest weight. The ratio of observation variance to coefficient of variation (CV) reflects precision versus
+consistency. Generally, one doesn't want to observe low observation variance with high CVs and vice versa, indicating inappropriate model fit. 
+
+```{r fig-obsvar}
+#| fig-cap: "Internally estimated observation variances by data source, sorted by magnitude."
+show_diag("h1_observation_var.png")
+```
+
+```{r fig-obsvarcv}
+#| fig-cap: "Observation variance versus estimation CV. Points far to the right are down-weighted by the model."
+show_diag("h1_variance_vs_cv.png")
+```
+
+## F variance parameters {#sec-fvars}
+
+Age-coupled F parameters control how smoothly selectivity varies across ages within
+each fleet. Panels show the estimated variance for each age group. In general, the best fitting model showed very similar variance across all ages. The South Central fleet showed lowest variability in F over time while the Offshore fleet showed highest variability. 
+
+```{r fig-fvars}
+#| fig-cap: "F variance parameters by fleet and age group."
+show_diag("h1_fvars.png")
+```
+
+## Selectivity {#sec-sel}
+
+Selectivity is expressed as F/Fbar at each age and fleet, grouped by five-year periods
+to show temporal trends. Changes in shape over time may indicate non-stationarity in
+fleet behaviour or stock demography. There is substantial change in all fleets from relatively dome shaped to increasing and vice versa. 
+
+```{r fig-sel}
+#| fig-cap: "Estimated selectivity (F/Fbar) by fleet and five-year period. Each line is one year; colour scale = year."
+show_diag("h1_selectivity.png")
+```
+
+## Fishing mortality at age {#sec-fatage}
+
+Fleet-specific F at age since 2000. Each panel corresponds to one of the four catch
+fleets.
+
+```{r fig-fatage}
+#| fig-cap: "F at age from 2000 by catch fleet. Each line is one age group."
+show_diag("h1_fatage.png")
+```
+
+## Catch residuals {#sec-catchres}
+
+Standardised residuals of the log-normal catch observation equation. Bubble area is
+proportional to the magnitude of the residual; blue = positive, red = negative.
+Systematic patterns (diagonal bands = cohort, horizontal bands = age, vertical bands =
+year effect) indicate model misspecification. There are substantial bands to be seen by age in the FarNorth fleet (age 6+),
+and the Offshore trawl (age 8+).
+
+```{r fig-catchres}
+#| fig-cap: "Standardised catch residuals by fleet. Bubble size = |residual|; blue = positive, red = negative."
+show_diag("h1_catch_residuals.png")
+```
+
+## Survey index fits {#sec-surveyfit}
+
+Observed biomass index values (points) against model-predicted values (red line) for
+each survey. Persistent bias in a subset of years suggests time-varying catchability.
+There is considerably misfit for most of the indices. Especially pronounced are the misfits for Acoustic North,
+The Chilean CPUE, offshore CPUE and Peruvian CPUE. 
+
+```{r fig-surveyfit}
+#| fig-cap: "Survey index fits. Points = observed; red line = model prediction."
+show_diag("h1_index_fits.png")
+```
+
+## Survey residuals {#sec-surveyres}
+
+Lollipop residual plot for survey biomass indices. A trend in residuals (e.g. positive
+early years and negative late years) indicates that SAM's fixed-$q$ assumption is
+violated for that survey.
+
+```{r fig-surveyres}
+#| fig-cap: "Standardised survey residuals by index."
+show_diag("h1_survey_residuals.png")
+```
+
+## Process error {#sec-procerr}
+
+The process-error plots show the estimated deviation in log-numbers (top) and
+log-mortality (bottom) by age and year. Large process errors indicate years where the
+model needed to absorb information that the deterministic population projection could
+not explain. From age 6+ there are substantial temporal patterns with age 6 & 7 being opposite in sign from age 8 & 9 which
+may reflect issues with age reading. There is a general tendency to overestimate older ages. 
+
+```{r fig-procerr-n}
+#| fig-cap: "Process errors in log-N by age and year (relative, stock weight-scaled)."
+show_diag("h1_procerr_N.png")
+```
+
+```{r fig-procerr-m}
+#| fig-cap: "Process errors in log-mortality by age and year."
+show_diag("h1_procerr_M.png")
+```
+
+## Correlation matrix {#sec-cor}
+
+The parameter correlation matrix provides a summary of structural collinearity in the
+model. There is high correlation between the between-age correlation (itrans_rho) in the F states and the variance parameters (logSdLogFsta)
+as s well as within the variance parameters. All other correlations are low. 
+
+```{r fig-cor}
+#| fig-cap: "Pairwise correlation matrix of estimated parameters."
+show_diag("h1_cor_params.png")
+```
+
+## Stock-recruit relationship {#sec-sr}
+
+The SSB–recruitment scatter provides a visual check on plausible stock dynamics. The
+absence of a strong Beverton-Holt or Ricker relationship is expected for short-lived
+pelagic species where recruitment is highly variable. Points coloured by year; path
+shows chronological sequence.
+
+```{r fig-sr}
+#| fig-cap: "Estimated SSB vs age-1 recruitment. Points coloured by year; path shows chronological sequence."
+show_diag("h1_stock_recruit.png")
+```
+
+## Numbers at age {#sec-natage}
+
+Model-estimated stock numbers at age on a log scale since 2000. Parallel lines
+indicate stable age structure; divergence highlights cohort events or shifts in F.
+
+```{r fig-natage}
+#| fig-cap: "Estimated stock numbers at age (log-scale) from 2000."
+show_diag("h1_natage.png")
+```
+
+# Retrospective Analysis {#sec-retro}
+
+Retrospective analyses sequentially remove the most recent year of data and re-fit the
+model. A systematic upward or downward revision of SSB or Fbar in the terminal year
+indicates a retrospective pattern, quantified by Mohn's $\rho$ [@mohn1999retrospective].
+In general, retrospective patterns are reasonable for SSB (which is estimated with large uncertainty) and F. 
+
+$$
+\rho = \frac{1}{n}\sum_{p=1}^{n}\frac{\hat{\theta}_{T-p,T-p} - \hat{\theta}_{T-p,T}}{\hat{\theta}_{T-p,T}}
+$$
+
+where $\hat{\theta}_{T-p,T-p}$ is the terminal-year estimate in the peel ending at year
+$T-p$ and $\hat{\theta}_{T-p,T}$ is the full-model estimate for the same year. Values
+of $|\rho| > 0.20$ for SSB or $|\rho| > 0.30$ for F are commonly considered
+problematic [@mohn1999retrospective].
+
+```{r fig-retro-ssb}
+#| fig-cap: "Retrospective SSB trajectories (10 peels). Black line and shaded band = full model; coloured lines = retrospective peels."
+show_diag("h1_retro_ssb.png")
+```
+
+```{r fig-retro-fbar}
+#| fig-cap: "Retrospective Fbar trajectories."
+show_diag("h1_retro_fbar.png")
+```
+
+```{r retro-rho, results='asis'}
+rho_file <- file.path(diag_dir, "h1_mohns_rho.txt")
+if (file.exists(rho_file)) {
+  cat("```\n")
+  cat(readLines(rho_file), sep = "\n")
+  cat("\n```\n")
+}
+```
+
+# Catchability Diagnostics {#sec-q}
+
+Fixed catchability ($q$) is one of the most consequential assumptions in any assessment
+model. If the true $q$ of a survey changes over time — due to changes in gear
+efficiency, stock distribution, or survey design — the model will accumulate systematic
+residuals. The following diagnostics are designed to detect and characterise such
+trends. 
+
+## Rolling residuals and catchability drift {#sec-qroll}
+
+A five-year rolling mean of standardised residuals reveals slow shifts in effective
+catchability. Persistent positive residuals indicate the model is under-predicting the
+survey (i.e. $q$ is in reality increasing), and vice versa. The figure clearly shows
+that several indices suffer from trends in residuals, specifically the the Chilean CPUE, offshore CPUE,
+Peruvian Acoustic. 
+
+```{r fig-qroll}
+#| fig-cap: "Survey residuals (bars) with 5-year rolling mean (line). A trend in the rolling mean indicates time-varying catchability."
+show_diag("h1_q_rolling_residuals.png")
+```
+
+## Implied catchability trend {#sec-qtrend}
+
+The quantity $\log(I_t) - \log(\hat{B}_t)$ is proportional to $\log(q_t)$. Centring
+this series by its mean isolates the relative change in $q$ over time. A significant
+linear trend (shown in grey) indicates that the constant-$q$ assumption is violated.
+Only the Chilean Acoustic CS, the DEPM and the Peruvian CPUE show no significant trend. 
+
+```{r fig-qtrend}
+#| fig-cap: "Implied log-catchability relative to fleet mean. Slope ≠ 0 indicates time-varying q. OLS trend shown in black."
+show_diag("h1_q_trend.png")
+```
+
+## Runs test {#sec-runs}
+
+The Wald-Wolfowitz runs test [@methot2013stock] evaluates whether the signs of
+residuals are distributed randomly. Significantly too few runs (p < 0.05) indicates
+a non-random pattern, most commonly caused by time-varying catchability or model
+misspecification.
+
+```{r fig-runs}
+#| fig-cap: "Runs test p-value for each fleet. Bars below the dashed line (p = 0.05) indicate non-random residuals."
+show_diag("h1_runs_test.png")
+```
+
+```{r tbl-runs, results='asis'}
+runs_file <- file.path(diag_dir, "h1_runs_test.csv")
+if (file.exists(runs_file)) {
+  rt <- read.csv(runs_file)
+  knitr::kable(rt, caption = "Runs test results by fleet.", digits = 4)
+}
+```
+
+# Fleet Conflict and Compensation Diagnostics {#sec-conflict}
+
+When multiple fleets and surveys contribute information to the same population
+trajectory, they may provide conflicting signals. SAM's internal weighting resolves
+conflicts by down-weighting inconsistent sources, but residual patterns can still
+reveal the nature of the tension.
+
+## Residual cross-correlation matrix {#sec-crosscor}
+
+The cross-correlation of annual (mean) residuals between all fleets identifies
+structural conflicts. A strong negative correlation between two fleets means one
+over-predicts systematically when the other under-predicts — a diagnostic signal for
+fleet compensation. Positive correlations suggest fleets respond coherently to the
+same environmental or stock signal. Especially the offshore CPUE contradicts in trend with 
+the Peruvian Acoustic and Chilean Acoustic CS. 
+
+```{r fig-crosscor}
+#| fig-cap: "Cross-correlation of mean annual residuals between all fleets. Red = negative correlation (conflict); blue = positive (co-vary)."
+show_diag("h1_residual_crosscor.png")
+```
+
+## Pairwise survey index scatter {#sec-pairwise}
+
+Plotting pairs of survey indices over shared years shows whether surveys agree on the
+direction and magnitude of stock change. Diverging trends or low correlations indicate
+that surveys sample different components of the stock or are affected by different
+sources of variability.
+
+```{r fig-pairwise}
+#| fig-cap: "Pairwise scatter of log-biomass survey indices. Points coloured by year; OLS trend shown."
+show_diag("h1_survey_pairwise.png")
+```
+
+## Cohort tracking across catch fleets {#sec-cohort}
+
+The same cohort should be detectable across all catch fleets as it ages through the
+population. If catch-at-age data from different fleets show diverging relative
+abundance for the same cohort at the same age, it indicates either gear selectivity
+conflicts, spatial overlap differences, or data inconsistencies.
+
+```{r fig-cohort}
+#| fig-cap: "Relative catch-at-age by fleet for recent cohorts. Each fleet is a colour; divergence between lines indicates fleet conflict on cohort strength or selectivity."
+show_diag("h1_cohort_tracking.png")
+```
+
+# Productivity Analysis {#sec-productivity}
+
+## Rationale
+
+The Beverton-Holt stock-recruitment relationship describes how spawning biomass (SSB)
+translates into future recruitment. The steepness parameter $h$ is the fraction of
+unfished recruitment $R_0$ that is produced at 20% of unfished SSB ($B_0$):
+
+$$
+R = \frac{0.8\,R_0\,h\,\text{SSB}}{0.2\,B_0(1-h) + (5h-1)\,\text{SSB}}
+\quad\equiv\quad
+R = \frac{a\,\text{SSB}}{b + \text{SSB}},
+\quad h = \frac{0.2(b + B_0)}{b + 0.2\,B_0}
+$$
+
+where $B_0$ is approximated by the maximum observed SSB. High steepness ($h > 0.8$)
+indicates low compensation — recruitment is nearly independent of spawning biomass.
+
+A change in steepness over time signals a **shift in stock productivity** that is not
+captured by the primary assessment model (JJM uses fixed life-history parameters). Such
+shifts can arise from regime changes, density-dependent effects at low stock size, or
+environmental shifts affecting larval survival.
+
+## Method
+
+Beverton-Holt curves are fitted by **weighted nonlinear least squares**, using
+uncertainty in the SAM recruitment estimate as observation weights:
+
+$$
+w_t = \frac{1}{\hat{\sigma}^2_{\log R_t}}, \qquad
+\hat{\sigma}_{\log R_t} \approx \frac{\text{CI}_{97.5} - \text{CI}_{2.5}}{4\,R_t}
+$$
+
+Change points are found by exhaustive search over all candidate break years (minimum
+10 years per segment). The improvement in total weighted residual SS when adding a
+break is tested with an $F$-test (2 additional parameters per break). A second break
+is only searched if the first is significant at $p < 0.05$.
+
+```{r prod-summary, results='asis'}
+sf <- file.path(diag_dir, "h1_productivity_summary.txt")
+if (file.exists(sf)) {
+  cat("```\n")
+  cat(readLines(sf), sep = "\n")
+  cat("\n```\n")
+}
+```
+
+## Productivity over time
+
+Annual productivity (R/SSB) with 95% confidence intervals propagated from SAM
+uncertainty in both recruitment and SSB via the delta method on the log scale:
+$\text{SE}_{\log(R/\text{SSB})} \approx \sqrt{\text{SE}^2_{\log R} + \text{SE}^2_{\log \text{SSB}}}$.
+A LOESS smoother highlights the long-term trend without imposing a parametric form.
+
+```{r fig-prod-time}
+#| fig-cap: "Productivity (R/SSB) over time. Points = annual estimate; bars = 95% CI; line = LOESS smoother. A declining trend indicates reducing stock productivity."
+show_diag("h1_productivity_time.png")
+```
+
+## Stock-recruit panels
+
+Up to three panels are shown depending on how many break points are statistically
+supported. The legend of each multi-period panel includes the estimated steepness for
+that period. Error bars show 95% confidence intervals from SAM on both SSB (horizontal)
+and recruitment (vertical).
+
+```{r fig-productivity}
+#| fig-cap: "Beverton-Holt stock-recruit analysis. Panel 1: full time series (points coloured by year). Panel 2 (if shown): best single break, two B-H curves coloured by period with steepness in legend. Panel 3 (if shown): two breaks, three periods."
+show_diag("h1_productivity_sr.png")
+```
+
+# Selectivity Block Suggestions for JJM {#sec-blocks}
+
+## Rationale
+
+JJM requires the user to pre-specify constant-selectivity blocks: periods within which
+selectivity-at-age is assumed to be time-invariant. In practice these blocks are set
+based on expert knowledge of fleet changes, but there is no objective statistical
+criterion for where boundaries should fall.
+
+SAM estimates selectivity annually through the random-walk F process. The trajectory
+of the annual selectivity *shape* (F/Fbar at age, normalised so the peak = 1) therefore
+provides an empirical signal of when selectivity changed significantly. A structural
+break in this trajectory is a principled suggestion for a new JJM block boundary.
+
+## Method
+
+For each catch fleet:
+
+1. The normalised selectivity-at-age vector is extracted for every year from the SAM
+   fit (shape only: F/Fbar at age, scaled so the peak age = 1).
+2. The dominant mode of temporal variation is captured by the first principal component
+   (PC1) of the annual selectivity matrix.
+3. The PC1 time series is split into blocks using **binary segmentation**, with each
+   year weighted by its relative catch ($w_t = C_t / \max C$). This ensures that
+   periods with little fishing activity have minimal influence on where block
+   boundaries are placed. Splits require $p < 0.05$ (F-test) and at least five years
+   per segment.
+4. Each detected breakpoint is assigned an **importance score**:
+
+$$
+\text{importance} = F_{\text{split}} \times \frac{\sum_{t \in \text{segment}} C_t}{C_{\text{total}}}
+$$
+
+   Breakpoints are **ranked 1 (most important) downward**: rank 1 should be kept even
+   if the number of blocks is reduced; rank $k$ can be dropped first. This allows a
+   user to move from the full block structure to a simpler one by dropping the
+   highest-numbered ranks.
+5. Within-block variance, peak-selectivity age, and the percentage of total fleet catch
+   in each block are reported as supporting statistics.
+
+## PC1 trajectories and block boundaries
+
+The PC1 score over time reveals the dominant mode of selectivity change. Vertical red
+lines mark suggested block boundaries; the **number is the importance rank** (1 = most
+important). Grey shading behind the line shows the relative catch weight. To reduce the
+number of blocks, drop boundaries starting from the highest rank number.
+
+```{r fig-sel-pc1}
+#| fig-cap: "PC1 of annual selectivity shape per fleet. Red lines = block boundaries; rank label (1 = most important to retain). Grey shading = relative catch weight."
+show_diag("h1_selectivity_pc1.png")
+```
+
+## Selectivity curves by block
+
+Individual annual selectivity curves are shown in the colour of their assigned block;
+the dashed line is the block mean. Blocks with tightly clustered curves support the
+constant-selectivity assumption; blocks where thin lines diverge strongly from the mean
+suggest that within-block variation may still be substantial.
+
+```{r fig-sel-byblock}
+#| fig-cap: "Annual selectivity curves coloured by suggested JJM block. Dashed line = block mean."
+show_diag("h1_selectivity_byblock.png")
+```
+
+## Suggested block table
+
+```{r tbl-blocks, results='asis'}
+blk_file <- file.path(diag_dir, "h1_selectivity_blocks.csv")
+if (file.exists(blk_file)) {
+  blk <- read.csv(blk_file)
+  knitr::kable(
+    blk[, c("fleet", "block", "start_year", "end_year",
+            "n_years", "catch_pct", "peak_age", "within_var",
+            "boundary_rank", "rationale")],
+    col.names = c("Fleet", "Block", "Start", "End", "N years",
+                  "Catch %", "Peak age", "Within-var.",
+                  "Boundary rank", "Rationale"),
+    caption   = paste(
+      "Suggested constant-selectivity blocks for JJM by catch fleet.",
+      "**Catch %** = percentage of total fleet catch in that block.",
+      "**Boundary rank** = importance of the boundary ending this block",
+      "(1 = most important, highest rank = drop first to reduce blocks).",
+      "Within-block variance is the mean temporal variance in normalised",
+      "selectivity across ages; lower = more stable selectivity shape."),
+    digits    = 5
+  )
+}
+```
+
+## Caveats
+
+- The analysis operates on SAM's estimated selectivity, which itself carries
+  uncertainty. Short blocks (< 5 years) or blocks separated by a weak PC1 shift should
+  be treated with caution.
+- SAM's random-walk F tends to smooth selectivity; abrupt one-year anomalies visible
+  in the raw data may be absorbed into the process error rather than reflected in the
+  selectivity trajectory.
+- The suggestions are a starting point. Fleet-specific information (gear changes, area
+  closures, quota redistribution) should take precedence when it conflicts with the
+  statistical signal.
+
+# Discussion {#sec-discussion}
+
+## Utility of SAM as a diagnostic tool
+
+The primary value of applying SAM alongside JJM is not to replace the primary
+assessment but to leverage SAM's internal observation-variance estimation to identify
+data-weighting inconsistencies. Where SAM assigns a high observation variance to a
+particular fleet, it suggests that the fleet's contribution to the likelihood is
+relatively small — a finding that may inform external weighting decisions in JJM.
+
+The process-error plots (Section @sec-standard) are particularly informative: large
+process errors in specific age classes or years indicate that the deterministic
+population projection is insufficient to track the observed data, which may signal
+recruitment events, migration, or measurement issues not captured in the model
+structure.
+
+## Interpreting catchability diagnostics
+
+The implied-$q$ diagnostics (Section @sec-q) should be interpreted with care for
+biomass-only surveys covering large and spatially heterogeneous stock distributions.
+The ratio $\log(I_t) - \log(\hat{B}_t)$ conflates true catchability change with
+changes in stock distribution, survey coverage, and gear efficiency. A statistically
+significant trend in this quantity is a necessary but not sufficient condition for
+concluding that survey $q$ has changed.
+
+For the runs test, non-random residuals (p < 0.05) are common in long biomass survey
+series covering stocks with high interannual variability, particularly when the fixed-$q$
+model cannot fully describe index dynamics. These results should be treated as prompts
+for investigation rather than definitive evidence of model failure.
+
+## Fleet conflict and compensation
+
+Negative entries in the residual cross-correlation matrix (@sec-crosscor) indicate
+that two fleets pull the model in opposite directions. If stock distribution shifts northward
+in some years, one survey will over-index while another under-indexes, even if total
+abundance is unchanged.
+
+SAM resolves these conflicts through differential down-weighting, but the resolution
+implies that the "losing" fleet contributes less to the final trajectory estimate.
+Pairwise scatter plots (@sec-pairwise) and cohort tracking (@sec-cohort) help identify
+which surveys are internally consistent with each other and which represent independent
+or contradictory signals.
+
+## Limitations of the SAM diagnostic
+
+Several aspects of the JJM assessment cannot be directly evaluated through SAM:
+
+- **Length composition data** are not used in the SAM fit. JJM uses both age and length
+  compositions, and the interaction between the two likelihood components is an
+  important source of information on the growth transition matrix.
+- **Biomass-index simplification**: JJM surveys may be age-disaggregated or
+  vulnerability-weighted, whereas the SAM diagnostic treats all indices as
+  integrated biomass. This may absorb selectivity changes into the $q$ term.
+- **Stock-recruitment**: SAM does not impose a stock-recruitment relationship; JJM can
+  optionally constrain recruitment. The SAM retrospective therefore reflects pure
+  data-driven retrospective bias rather than the interplay between SR assumptions and
+  data.
+- **Two-stock configuration (H2)**: This analysis covers H1 only. A separate SAM run
+  for H2's far-northern stock would be needed to evaluate the split-stock hypothesis.
+
+## Recommendations
+
+Based on the diagnostic results, the following assessments are suggested:
+
+1. **Observation variance comparison**: Compare the relative magnitudes of SAM's
+   estimated observation variances to the effective sample sizes used in JJM.
+   Systematic disagreement may indicate that JJM over- or under-weights certain
+   surveys.
+2. **Catchability trend investigation**: For any survey flagging a significant runs-test
+   failure or a linear trend in implied $q$, review survey design changes, spatial
+   coverage, and equipment upgrades over the time series.
+3. **Fleet conflict investigation**: Pairs of surveys with strongly negative
+   cross-correlations in residuals should be examined for spatial stratification
+   differences and temporal coverage gaps.
+4. **Retrospective pattern**: If Mohn's $\rho$ for SSB exceeds 0.20 in absolute value,
+   investigate the most recent data years for influential observations or catchability
+   breaks.
+
+# References {.unnumbered}
