@@ -117,15 +117,17 @@ R package (`stockassessment`). It has become the **standard stock assessment mod
 the majority of ICES-advised stocks**, including North Sea herring, North Sea cod,
 mackerel, blue whiting, and many others. Although it is not yet widely used outside
 the North Atlantic, its mathematical foundations are general and apply directly to
-multi-fleet pelagic assessments such as CJM.
+multi-fleet pelagic assessments such as CJM [@nielsen2021multifleet].
 
 The core idea is to treat the unobserved true population state — numbers-at-age and
 fishing mortality — as **latent random variables** that evolve through time according
 to a process model, while catch and survey observations are linked to those states
 through an observation model with estimated error variances. This formulation is known
-as a **state-space model** and is solved using the Kalman filter / smoother algorithm
-combined with the Laplace approximation, implemented in the **TMB** (Template Model
-Builder) automatic differentiation framework [@kristensen2016tmb]. The result is a
+as a **state-space model** and is fitted using the **Laplace approximation**
+implemented in the **TMB** (Template Model Builder) automatic differentiation
+framework [@kristensen2016tmb]. TMB integrates out the latent states numerically,
+making the Laplace approximation necessary because the catch equation's Baranov term
+renders the model nonlinear in the latent states. The result is a
 computationally efficient, fully differentiable likelihood that propagates both process
 and observation uncertainty into all derived quantities.
 
@@ -231,7 +233,7 @@ Data weights are specified externally (e.g. Francis reweighting, @francis2011dat
 
 | Feature | JJM | SAM |
 |---|---|---|
-| **Framework** | Deterministic forward projection (ADMB) | State-space Kalman filter (TMB) |
+| **Framework** | Deterministic forward projection (ADMB) | State-space model with Laplace approximation (TMB) |
 | **Process error** | None — $N$ fully determined by catch | Random walk in $\log N$ and $\log F$ |
 | **Composition data** | Age and length proportions (multinomial) | Age proportions only (log-normal) |
 | **Data weighting** | External (Francis, input ESS) | Internal — $\sigma^2$ estimated |
