@@ -50,6 +50,41 @@ biomass_to_FLIndex <- function(x) {
 idx_h1 <- FLIndices(lapply(idx_h1, biomass_to_FLIndex))
 
 # ============================================================
+# Split indices with time-varying q (break years from JJM h1_1.14.ctl)
+#   Chile_AcousCS : break 2002
+#   Chile_CPUE    : break 2000
+#   Offshore_CPUE : break 2021
+# Split pairs share obs.var but receive separate catchability parameters.
+# biomassTreat is preserved via explicit assignment below.
+# ============================================================
+
+q_breaks <- list(
+  Chile_AcousCS = 2002,
+  Chile_CPUE    = 2000,
+  Offshore_CPUE = 2021
+)
+
+split_idx <- function(fl, break_yr) {
+  early      <- window(fl, end   = break_yr - 1)
+  late       <- window(fl, start = break_yr)
+  early@name <- paste0(fl@name, "_early")
+  late@name  <- paste0(fl@name, "_late")
+  list(early = early, late = late)
+}
+
+idx_split <- list()
+for (nm in names(idx_h1)) {
+  if (nm %in% names(q_breaks)) {
+    sp <- split_idx(idx_h1[[nm]], q_breaks[[nm]])
+    idx_split[[paste0(nm, "_early")]] <- sp$early
+    idx_split[[paste0(nm, "_late")]]  <- sp$late
+  } else {
+    idx_split[[nm]] <- idx_h1[[nm]]
+  }
+}
+idx_h1 <- FLIndices(idx_split)
+
+# ============================================================
 # Expand harvest.spwn / m.spwn to match fleet (area) count
 # These slots are stock-level (1 area) but FLSAM2SAM loops over
 # all areas; replicate the single layer to each fleet.
@@ -96,12 +131,81 @@ ctrl_h1@obs.vars["catch N_Chile",] 			    <- c(1,rep(2,11))
 ctrl_h1@obs.vars["catch SC_Chile_PS",] 		  <- c(rep(1,12)) 		+ 101
 ctrl_h1@obs.vars["catch FarNorth",] 		    <- c(1,1,1,rep(2,9)) 		+ 201
 ctrl_h1@obs.vars["catch Offshore_Trawl",] 	<- c(rep(1,12)) 		+ 301
-ctrl_h1@obs.vars[5:11,1] 					          <- c(0:6)				+ 401
 
-ctrl_h1@biomassTreat[5:11]                  <- c(5,5,2,0,5,2,2)
+# Split pairs share the same obs.var index; each gets its own catchability.
+# Index order after splitting (10 surveys):
+#   Chile_AcousCS_early, Chile_AcousCS_late, Chile_AcousN,
+#   Chile_CPUE_early, Chile_CPUE_late, DEPM,
+#   Peru_Acoustic, Peru_CPUE, Offshore_CPUE_early, Offshore_CPUE_late
+ctrl_h1@obs.vars["Chile_AcousCS_early", 1] <- 401
+ctrl_h1@obs.vars["Chile_AcousCS_late",  1] <- 401   # shared with early
+ctrl_h1@obs.vars["Chile_AcousN",        1] <- 402
+ctrl_h1@obs.vars["Chile_CPUE_early",    1] <- 403
+ctrl_h1@obs.vars["Chile_CPUE_late",     1] <- 403   # shared with early
+ctrl_h1@obs.vars["DEPM",                1] <- 404
+ctrl_h1@obs.vars["Peru_Acoustic",       1] <- 405
+ctrl_h1@obs.vars["Peru_CPUE",           1] <- 406
+ctrl_h1@obs.vars["Offshore_CPUE_early", 1] <- 407
+ctrl_h1@obs.vars["Offshore_CPUE_late",  1] <- 407   # shared with early
+
+# biomassTreat: 0=SSB, 2=exploitable biomass, 5=total biomass
+ctrl_h1@biomassTreat["Chile_AcousCS_early"] <- 5
+ctrl_h1@biomassTreat["Chile_AcousCS_late"]  <- 5
+ctrl_h1@biomassTreat["Chile_AcousN"]        <- 5
+ctrl_h1@biomassTreat["Chile_CPUE_early"]    <- 2
+ctrl_h1@biomassTreat["Chile_CPUE_late"]     <- 2
+ctrl_h1@biomassTreat["DEPM"]               <- 0
+ctrl_h1@biomassTreat["Peru_Acoustic"]       <- 5
+ctrl_h1@biomassTreat["Peru_CPUE"]          <- 2
+ctrl_h1@biomassTreat["Offshore_CPUE_early"] <- 2
+ctrl_h1@biomassTreat["Offshore_CPUE_late"]  <- 2
 
 ctrl_h1 <- update(ctrl_h1)
 ctrl_h1@residuals <- TRUE
+
+# ============================================================
+# Helper: rebuild ctrl for any subset of indices
+# Used by both the retrospective loop and leave-one-out fits.
+# ============================================================
+build_ctrl <- function(stk, idx_sub) {
+  ctrl <- FLSAM.control(stk, idx_sub)
+  ctrl@plus.group[] <- 1
+
+  ctrl@states["catch N_Chile",]          <- c(1:7, rep(8,5))
+  ctrl@states["catch SC_Chile_PS",]      <- c(1:8, rep(9,4))  + 101
+  ctrl@states["catch FarNorth",]         <- c(1:5, rep(6,7))  + 201
+  ctrl@states["catch Offshore_Trawl",]   <- c(1:7, rep(8,5))  + 301
+
+  ctrl@f.vars["catch N_Chile",]          <- c(0,0,1,1,rep(2,8))
+  ctrl@f.vars["catch SC_Chile_PS",]      <- c(0,1,1,1,rep(2,8)) + 101
+  ctrl@f.vars["catch FarNorth",]         <- c(0,1,2,rep(3,9))   + 201
+  ctrl@f.vars["catch Offshore_Trawl",]   <- c(0)                + 301
+
+  ctrl@obs.vars["catch N_Chile",]        <- c(1, rep(2,11))
+  ctrl@obs.vars["catch SC_Chile_PS",]    <- c(rep(1,12))       + 101
+  ctrl@obs.vars["catch FarNorth",]       <- c(1,1,1,rep(2,9))  + 201
+  ctrl@obs.vars["catch Offshore_Trawl",] <- c(rep(1,12))       + 301
+
+  obs_map <- c(Chile_AcousCS_early=401, Chile_AcousCS_late=401,
+               Chile_AcousN=402,
+               Chile_CPUE_early=403,   Chile_CPUE_late=403,
+               DEPM=404, Peru_Acoustic=405, Peru_CPUE=406,
+               Offshore_CPUE_early=407, Offshore_CPUE_late=407)
+  bio_map <- c(Chile_AcousCS_early=5,  Chile_AcousCS_late=5,
+               Chile_AcousN=5,
+               Chile_CPUE_early=2,     Chile_CPUE_late=2,
+               DEPM=0, Peru_Acoustic=5, Peru_CPUE=2,
+               Offshore_CPUE_early=2,  Offshore_CPUE_late=2)
+
+  for (nm in names(idx_sub)) {
+    ctrl@obs.vars[nm, 1]  <- obs_map[nm]
+    ctrl@biomassTreat[nm] <- bio_map[nm]
+  }
+
+  ctrl <- update(ctrl)
+  ctrl@residuals <- FALSE
+  ctrl
+}
 
 # ============================================================
 # Fit FLSAM models
@@ -110,10 +214,90 @@ ctrl_h1@residuals <- TRUE
 sam_h1   <- FLSAM(stk_h1,             idx_h1, ctrl_h1)
 
 # ============================================================
-# Run retrospectice
+# Retrospective analysis (manual loop)
+# retro() cannot handle sub-series that become empty mid-peel (q-break splits).
+# For each peel: window stock + indices, detect empty sub-series, drop them
+# from ctrl with drop.from.control(), then fit. The named list retro_h1 is
+# compatible with the downstream ssb()/fbar() extraction code.
 # ============================================================
 ctrl_h1@residuals <- FALSE
-retro_h1   <- retro(stk_h1,             idx_h1, ctrl_h1,retro=10)
+max_yr  <- range(stk_h1)["maxyear"]
+n_retro <- 10
+
+retro_h1 <- setNames(vector("list", n_retro),
+                     as.character(max_yr - seq_len(n_retro)))
+
+for (peel in seq_len(n_retro)) {
+  yr_end   <- max_yr - peel
+  stk_peel <- window(stk_h1, end = yr_end)
+
+  # Only include indices with at least 2 years of data in [minyear, yr_end].
+  # A single-year sub-series (e.g. Offshore_CPUE_late at peel->2021) causes
+  # SAM's internal data.frame construction to fail with a row-count mismatch.
+  in_range <- sapply(idx_h1, function(fl) range(fl)["minyear"] <= yr_end - 1)
+  dropped  <- names(idx_h1)[!in_range]
+
+  if (length(dropped) > 0) {
+    cat(sprintf("Retro peel %i (->%i): dropping out-of-range: %s\n",
+                peel, yr_end, paste(dropped, collapse = ", ")))
+  } else {
+    cat(sprintf("Retro peel %i (->%i)\n", peel, yr_end))
+  }
+
+  idx_peel  <- FLIndices(lapply(idx_h1[in_range], window, end = yr_end))
+  # Rebuild ctrl from scratch for this subset — avoids drop.from.control() issues
+  ctrl_peel <- build_ctrl(stk_peel, idx_peel)
+
+  retro_h1[[as.character(yr_end)]] <- tryCatch(
+    FLSAM(stk_peel, idx_peel, ctrl_peel),
+    error = function(e) { message("  FAILED: ", e$message); NULL }
+  )
+}
+retro_h1 <- Filter(Negate(is.null), retro_h1)
+
+# Add full assessment keyed by its final year
+retro_h1[[as.character(max_yr)]] <- sam_h1
+
+# ============================================================
+# Leave-one-out (LOO) analysis
+# Drop one survey group at a time; split pairs dropped together.
+# ============================================================
+
+# Groups to drop — split pairs removed together
+loo_groups <- list(
+  Chile_AcousCS = c("Chile_AcousCS_early", "Chile_AcousCS_late"),
+  Chile_AcousN  = "Chile_AcousN",
+  Chile_CPUE    = c("Chile_CPUE_early",    "Chile_CPUE_late"),
+  DEPM          = "DEPM",
+  Peru_Acoustic = "Peru_Acoustic",
+  Peru_CPUE     = "Peru_CPUE",
+  Offshore_CPUE = c("Offshore_CPUE_early", "Offshore_CPUE_late")
+)
+
+loo_fits <- lapply(names(loo_groups), function(grp) {
+  drop     <- loo_groups[[grp]]
+  idx_loo  <- FLIndices(idx_h1[!names(idx_h1) %in% drop])
+  ctrl_loo <- build_ctrl(stk_h1, idx_loo)
+  cat(sprintf("LOO: dropping %s ...\n", grp))
+  fit <- tryCatch(
+    FLSAM(stk_h1, idx_loo, ctrl_loo),
+    error = function(e) { message("  FAILED: ", e$message); NULL }
+  )
+  fit
+})
+names(loo_fits) <- names(loo_groups)
+
+# ============================================================
+# Save model outputs and input data
+# ============================================================
+save(stk_h1,      # input FLStock
+     idx_h1,      # input FLIndices (with early/late splits)
+     ctrl_h1,     # FLSAM control
+     sam_h1,      # full assessment fit
+     retro_h1,    # retrospective fits keyed by final year (incl. full model)
+     loo_fits,    # leave-one-out fits (one per survey group)
+     file = "output_h1.RData")
+cat("Saved output_h1.RData\n")
 
 # ============================================================
 # Diagnostics  (H1)
@@ -124,8 +308,56 @@ dir.create("diagnostics", showWarnings = FALSE)
 
 catch_fleets  <- c("catch N_Chile", "catch SC_Chile_PS",
                    "catch FarNorth", "catch Offshore_Trawl")
-survey_fleets <- c("Chile_AcousCS", "Chile_AcousN", "Chile_CPUE",
-                   "DEPM", "Peru_Acoustic", "Peru_CPUE", "Offshore_CPUE")
+survey_fleets <- c("Chile_AcousCS_early", "Chile_AcousCS_late",
+                   "Chile_AcousN",
+                   "Chile_CPUE_early", "Chile_CPUE_late",
+                   "DEPM", "Peru_Acoustic", "Peru_CPUE",
+                   "Offshore_CPUE_early", "Offshore_CPUE_late")
+
+# Helper: strip _early/_late suffixes for display — split pairs merge into one panel
+base_fleet          <- function(x) sub("_(early|late)$", "", x)
+survey_fleets_base  <- unique(base_fleet(survey_fleets))   # 7 base names
+
+##################################################
+## Catchability shift for split indices
+##################################################
+split_base <- names(q_breaks)   # Chile_AcousCS, Chile_CPUE, Offshore_CPUE
+
+q_df <- catchabilities(sam_h1)
+
+q_split <- do.call(rbind, lapply(split_base, function(b) {
+  early <- subset(q_df, fleet == paste0(b, "_early"))
+  late  <- subset(q_df, fleet == paste0(b, "_late"))
+  if (nrow(early) == 0 || nrow(late) == 0) return(NULL)
+  data.frame(
+    index      = b,
+    period     = factor(c("Early", "Late"), levels = c("Early", "Late")),
+    log_q      = c(early$value, late$value),
+    break_year = q_breaks[[b]]
+  )
+}))
+q_split$q <- exp(q_split$log_q)
+
+q_split$label <- sprintf("log(q) = %.3f\nq = %.4f", q_split$log_q, q_split$q)
+
+png("diagnostics/h1_catchability_change.png", width = 1400, height = 600, res = 150)
+print(
+  ggplot(q_split, aes(x = period, y = log_q, colour = period, group = index)) +
+    geom_line(colour = "grey60", linewidth = 0.9) +
+    geom_point(size = 4) +
+    geom_text(aes(label = label), vjust = -0.8, size = 3, lineheight = 0.9) +
+    geom_vline(xintercept = 1.5, linetype = "dashed", colour = "grey40") +
+    facet_wrap(~index, scales = "free_y") +
+    scale_colour_manual(values = c("Early" = "steelblue", "Late" = "tomato"),
+                        guide = "none") +
+    labs(title = "Catchability shift at q-break year (JJM h1_1.14 breaks)",
+         subtitle = paste(sapply(split_base, function(b)
+           sprintf("%s: break %i", b, q_breaks[[b]])), collapse = "   |   "),
+         x = NULL, y = "log(q)") +
+    theme_bw() +
+    theme(plot.subtitle = element_text(size = 9))
+)
+dev.off()
 
 ##################################################
 ## Full residual diagnostics (SAM default)
@@ -256,10 +488,12 @@ dev.off()
 ##################################################
 ## Survey residuals (biomass indices: year only)
 ##################################################
+res_survey_disp <- subset(res_all, fleet %in% survey_fleets)
+res_survey_disp$fleet <- base_fleet(res_survey_disp$fleet)
+
 png("diagnostics/h1_survey_residuals.png", width = 1800, height = 1400, res = 150)
 print(
-  ggplot(subset(res_all, fleet %in% survey_fleets),
-         aes(x = year, y = std.res)) +
+  ggplot(res_survey_disp, aes(x = year, y = std.res)) +
     geom_hline(yintercept = 0, linetype = "dashed") +
     geom_point(aes(fill = std.res > 0), shape = 21, size = 3) +
     geom_segment(aes(xend = year, yend = 0)) +
@@ -346,22 +580,24 @@ retro_fbar <- do.call(rbind, lapply(names(retro_h1), function(nm) {
 retro_ssb$peel  <- factor(retro_ssb$peel,  levels = names(retro_h1))
 retro_fbar$peel <- factor(retro_fbar$peel, levels = names(retro_h1))
 
-base_ssb  <- ssb(sam_h1);  base_ssb$peel  <- "base"
-base_fbar <- fbar(sam_h1); base_fbar$peel <- "base"
+base_ssb  <- ssb(sam_h1);  base_ssb$peel  <- as.character(max_yr)
+base_fbar <- fbar(sam_h1); base_fbar$peel <- as.character(max_yr)
 
 retro_ssb_all  <- rbind(retro_ssb,  base_ssb)
 retro_fbar_all <- rbind(retro_fbar, base_fbar)
 
+base_yr_chr <- as.character(max_yr)
+
 png("diagnostics/h1_retro_ssb.png", width = 1600, height = 900, res = 150)
 print(
   ggplot(retro_ssb_all, aes(x = year, y = value, colour = peel, group = peel)) +
-    geom_line(data = subset(retro_ssb_all, peel != "base"), alpha = 0.7) +
-    geom_line(data = subset(retro_ssb_all, peel == "base"), linewidth = 1.2, colour = "black") +
-    geom_ribbon(data = subset(retro_ssb_all, peel == "base"),
+    geom_line(data = subset(retro_ssb_all, peel != base_yr_chr), alpha = 0.7) +
+    geom_line(data = subset(retro_ssb_all, peel == base_yr_chr), linewidth = 1.2, colour = "black") +
+    geom_ribbon(data = subset(retro_ssb_all, peel == base_yr_chr),
                 aes(ymin = lbnd, ymax = ubnd), alpha = 0.2, colour = NA, fill = "black") +
     coord_cartesian(xlim = c(max(retro_ssb_all$year) - 15, max(retro_ssb_all$year))) +
     ylim(0, NA) +
-    labs(title = "Retrospective - SSB", x = "Year", y = "SSB", colour = "Peel") +
+    labs(title = "Retrospective - SSB", x = "Year", y = "SSB", colour = "Final year") +
     theme_bw()
 )
 dev.off()
@@ -369,13 +605,13 @@ dev.off()
 png("diagnostics/h1_retro_fbar.png", width = 1600, height = 900, res = 150)
 print(
   ggplot(retro_fbar_all, aes(x = year, y = value, colour = peel, group = peel)) +
-    geom_line(data = subset(retro_fbar_all, peel != "base"), alpha = 0.7) +
-    geom_line(data = subset(retro_fbar_all, peel == "base"), linewidth = 1.2, colour = "black") +
-    geom_ribbon(data = subset(retro_fbar_all, peel == "base"),
+    geom_line(data = subset(retro_fbar_all, peel != base_yr_chr), alpha = 0.7) +
+    geom_line(data = subset(retro_fbar_all, peel == base_yr_chr), linewidth = 1.2, colour = "black") +
+    geom_ribbon(data = subset(retro_fbar_all, peel == base_yr_chr),
                 aes(ymin = lbnd, ymax = ubnd), alpha = 0.2, colour = NA, fill = "black") +
     coord_cartesian(xlim = c(max(retro_fbar_all$year) - 15, max(retro_fbar_all$year))) +
     ylim(0, NA) +
-    labs(title = "Retrospective - Fbar", x = "Year", y = "Fbar", colour = "Peel") +
+    labs(title = "Retrospective - Fbar", x = "Year", y = "Fbar", colour = "Final year") +
     theme_bw()
 )
 dev.off()
@@ -384,7 +620,7 @@ dev.off()
 ## Mohn's rho
 ##################################################
 mohn_rho <- function(base_df, retro_list_df) {
-  peels <- setdiff(unique(retro_list_df$peel), "base")
+  peels <- setdiff(unique(retro_list_df$peel), as.character(max_yr))
   rhos  <- sapply(peels, function(p) {
     sub  <- subset(retro_list_df, peel == p)
     yr   <- max(sub$year)
@@ -405,12 +641,68 @@ cat(sprintf("Mohn's rho\n  SSB : %.4f\n  Fbar: %.4f\n", rho_ssb, rho_fbar))
 sink()
 
 ##################################################
+## Leave-one-out plots
+##################################################
+extract_loo <- function(fun, fits, base_fit) {
+  base_df         <- fun(base_fit)
+  base_df$dropped <- "Full model"
+  loo_df <- do.call(rbind, lapply(names(fits), function(grp) {
+    if (is.null(fits[[grp]])) return(NULL)
+    df         <- fun(fits[[grp]])
+    df$dropped <- grp
+    df
+  }))
+  rbind(base_df, loo_df)
+}
+
+loo_ssb_all <- extract_loo(ssb,  loo_fits, sam_h1)
+loo_fbar_all <- extract_loo(fbar, loo_fits, sam_h1)
+loo_rec_all  <- extract_loo(rec,  loo_fits, sam_h1)
+
+plot_loo <- function(dat, ylab, title) {
+  base  <- subset(dat, dropped == "Full model")
+  loodf <- subset(dat, dropped != "Full model")
+  ggplot() +
+    geom_ribbon(data = base,
+                aes(x = year, ymin = lbnd, ymax = ubnd),
+                fill = "grey70", alpha = 0.5) +
+    geom_line(data = base,
+              aes(x = year, y = value),
+              colour = "black", linewidth = 1) +
+    geom_ribbon(data = loodf,
+                aes(x = year, ymin = lbnd, ymax = ubnd),
+                fill = "tomato", alpha = 0.25) +
+    geom_line(data = loodf,
+              aes(x = year, y = value),
+              colour = "tomato", linewidth = 0.9) +
+    facet_wrap(~dropped, ncol = 2) +
+    ylim(0, NA) +
+    labs(title = title,
+         subtitle = "Black/grey = full model; red = model with survey group dropped",
+         x = "Year", y = ylab) +
+    theme_bw()
+}
+
+png("diagnostics/h1_loo_ssb.png",  width = 1800, height = 1400, res = 150)
+print(plot_loo(loo_ssb_all,  "SSB",         "Leave-one-out — SSB"))
+dev.off()
+
+png("diagnostics/h1_loo_fbar.png", width = 1800, height = 1400, res = 150)
+print(plot_loo(loo_fbar_all, "Mean F",      "Leave-one-out — Fbar"))
+dev.off()
+
+png("diagnostics/h1_loo_rec.png",  width = 1800, height = 1400, res = 150)
+print(plot_loo(loo_rec_all,  "Recruitment", "Leave-one-out — Recruitment"))
+dev.off()
+
+##################################################
 ## Index fits - observed vs model-predicted
 ##################################################
 fit_idx <- residuals(sam_h1)
 
 # For biomass surveys age is NA; use year on x-axis
 survey_fit <- subset(fit_idx, fleet %in% survey_fleets)
+survey_fit$fleet <- base_fleet(survey_fit$fleet)
 
 png("diagnostics/h1_index_fits.png", width = 1800, height = 1400, res = 150)
 print(
@@ -504,11 +796,12 @@ dev.off()
 ##################################################
 survey_raw <- do.call(rbind, lapply(names(idx_h1), function(nm) {
   d        <- as.data.frame(idx_h1[[nm]]@index)
-  d$fleet  <- nm
+  d$fleet  <- base_fleet(nm)   # merge early/late into one series
   d$data[d$data <= 0] <- NA
   d
 }))
 survey_raw <- subset(survey_raw, !is.na(data))
+# z-normalise per base fleet (early+late treated as one continuous series)
 survey_raw <- do.call(rbind, lapply(split(survey_raw, survey_raw$fleet), function(df) {
   df$z <- (df$data - mean(df$data, na.rm = TRUE)) / sd(df$data, na.rm = TRUE)
   df
@@ -559,6 +852,7 @@ ssb_df   <- ssb(sam_h1)                 # year, value (model SSB)
 # Cumulative sum of residuals = cumulative log-q change from model q.
 # ------------------------------------------------------------------
 survey_res <- subset(res_all, fleet %in% survey_fleets)
+survey_res$fleet <- base_fleet(survey_res$fleet)
 
 # Rolling mean of std residuals (window = 5 years)
 roll_mean <- function(x, k = 5) {
@@ -627,13 +921,14 @@ runs_test <- function(x) {
              result = ifelse(p < 0.05, "FAIL (trend)", "pass"))
 }
 
-runs_results <- do.call(rbind, lapply(c(catch_fleets, survey_fleets), function(fl) {
-  sub <- subset(res_all, fleet == fl)
-  # For catch fleets aggregate over ages per year first
+runs_results <- do.call(rbind, lapply(c(catch_fleets, survey_fleets_base), function(fl) {
+  # Match on base fleet name so early+late are combined into one series
+  sub <- subset(res_all, base_fleet(fleet) == fl)
   if (fl %in% catch_fleets) {
     sub <- aggregate(std.res ~ year, data = sub, FUN = mean, na.rm = TRUE)
     rt  <- runs_test(sub$std.res)
   } else {
+    sub <- sub[order(sub$year), ]
     rt  <- runs_test(sub$std.res)
   }
   cbind(fleet = fl, rt)
@@ -775,7 +1070,8 @@ survey_pairs <- merge(
 )
 colnames(survey_pairs) <- gsub("log\\.obs\\.", "", colnames(survey_pairs))
 
-pair_combos <- combn(survey_fleets, 2, simplify = FALSE)
+# survey_res$fleet already has base names; use survey_fleets_base for pairs
+pair_combos <- combn(survey_fleets_base, 2, simplify = FALSE)
 pair_plots  <- lapply(pair_combos, function(fl) {
   tmp <- survey_pairs[, c("year", fl[1], fl[2])]
   colnames(tmp) <- c("year", "x", "y")
@@ -1538,4 +1834,5 @@ dev.off()
 
 cat("Selectivity blocking output written to diagnostics/\n")
 
+Sys.setenv(QUARTO_PATH = "C:/Program Files/Quarto/bin/quarto.exe")  # adjust to whichever path was found
 quarto::quarto_render("sam_diagnostics.qmd")

@@ -535,6 +535,79 @@ if (file.exists(rho_file)) {
 }
 ```
 
+## In-depth retrospective diagnostics {#sec-retro-indepth}
+
+Large retrospective patterns can arise from several sources: (i) re-estimation of catchability and observation-variance parameters as data are added; (ii) high-influence observations that cause the model to re-interpret earlier years once the terminal year is included; or (iii) surveys whose residual structure changes systematically as more data are appended. The following four diagnostics, run with residuals enabled in each retrospective peel, help identify which mechanism is dominant.
+
+### Catchability across peels
+
+Catchability ($\log q$) is re-estimated in each peeled model. A stable $\log q$ across peels indicates that the parameter is identified by the bulk of the time-series and is not being pulled by a small number of terminal-year observations. Large drifts — particularly in the most recent peels — suggest that new data are revising the model's view of that survey's relationship to biomass, which in turn propagates into a retrospective SSB revision.
+
+```{r fig-retro-q}
+#| fig-cap: "Estimated log-catchability per survey across retrospective peels. x-axis = terminal year of each peel; a stable line indicates the parameter is well-identified throughout the series."
+show_diag("h1_retro_q_params.png")
+```
+
+### Observation variance across peels
+
+Observation-variance ($\sigma^2$) parameters govern how much weight is placed on each data source. If $\sigma^2$ for a survey drifts as years are removed, it signals that the noise structure inferred from recent data differs from the historical period — often a sign of a trend in data quality or catchability that the model absorbs into the variance estimate rather than the mean.
+
+```{r fig-retro-obsvar}
+#| fig-cap: "Estimated observation variances across retrospective peels, split by catch fleets (top) and survey indices (bottom)."
+show_diag("h1_retro_obsvar_params.png")
+```
+
+### Survey residual spaghetti
+
+Each line shows the standardised residuals of a survey for all years from one retrospective peel. The black line is the full model. If residuals in the *middle* of the time-series shift between peels, earlier data are being re-interpreted as terminal observations change — a structural conflict between that survey and others. If only the most terminal years shift, the pattern is consistent with normal retrospective behaviour driven by low information content at the data edge.
+
+```{r fig-retro-spaghetti}
+#| fig-cap: "Standardised survey residuals from all retrospective peels overlaid. Black line = full model; colour = terminal year of peel. Divergence from the full model in non-terminal years indicates structural conflict."
+show_diag("h1_retro_residual_spaghetti.png")
+```
+
+```{r fig-retro-catch-spaghetti}
+#| fig-cap: "Mean catch-fleet residuals (mean across ages per year) across retrospective peels."
+show_diag("h1_retro_catch_residual_spaghetti.png")
+```
+
+### Residual stability heatmap
+
+For each survey and year, the standard deviation of the standardised residual across all peels that included that year is computed. A year with high SD is re-interpreted substantially each time a new year of data is added — i.e. it has high leverage on the model trajectory. Years and surveys with consistently high SD are the primary suspects driving the retrospective pattern.
+
+```{r fig-retro-stability}
+#| fig-cap: "SD of standardised residuals across all retrospective peels, by survey and year. High values (yellow/bright) indicate high-leverage observations that shift interpretation as more data are added."
+show_diag("h1_retro_residual_stability.png")
+```
+
+# Leave-one-out Analysis {#sec-loo}
+
+Leave-one-out (LOO) analysis refits the model seven times, each time omitting one
+survey group entirely. For the three surveys with JJM q-break years (Chile_AcousCS,
+Chile_CPUE, Offshore_CPUE), both the early and late sub-series are dropped together
+so that each LOO run represents a genuine removal of that data source.
+
+The resulting SSB, Fbar, and recruitment trajectories are overlaid on the full model
+estimate. A large shift when a survey is dropped indicates that the model is strongly
+influenced by that data source — either because it carries substantial information or
+because it is in conflict with other inputs. Surveys whose removal causes little change
+are relatively redundant given the remaining data.
+
+```{r fig-loo-ssb}
+#| fig-cap: "Leave-one-out SSB. Each panel shows the full model (black line, grey CI) and the model with that survey group dropped (red line, red CI)."
+show_diag("h1_loo_ssb.png")
+```
+
+```{r fig-loo-fbar}
+#| fig-cap: "Leave-one-out mean F."
+show_diag("h1_loo_fbar.png")
+```
+
+```{r fig-loo-rec}
+#| fig-cap: "Leave-one-out recruitment."
+show_diag("h1_loo_rec.png")
+```
+
 # Catchability Diagnostics {#sec-q}
 
 Fixed catchability ($q$) is one of the most consequential assumptions in any assessment
@@ -554,6 +627,21 @@ Peruvian Acoustic.
 ```{r fig-qroll}
 #| fig-cap: "Survey residuals (bars) with 5-year rolling mean (line). A trend in the rolling mean indicates time-varying catchability."
 show_diag("h1_q_rolling_residuals.png")
+```
+
+## Catchability shift at break years {#sec-qshift}
+
+The JJM `h1_1.14` control file assigns discrete q-break years to three indices
+(Chile_AcousCS: 2002, Chile_CPUE: 2000, Offshore_CPUE: 2021). To honour these
+structural breaks, each of these indices is split into an early and a late
+sub-series in SAM, with the two sub-series sharing the same observation variance
+parameter but receiving independent catchability estimates. The figure below shows
+the estimated log(q) for the early and late periods; a large shift indicates that
+the survey efficiency or stock availability changed substantially at the break year.
+
+```{r fig-qshift}
+#| fig-cap: "Estimated log-catchability for early (blue) and late (red) sub-series of the three indices with JJM q-break years. Lines connect the two periods within each index."
+show_diag("h1_catchability_change.png")
 ```
 
 ## Implied catchability trend {#sec-qtrend}
