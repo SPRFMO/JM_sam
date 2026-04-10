@@ -117,10 +117,10 @@ ctrl_h1@states["catch SC_Chile_PS",]      <- c(1:8, rep(9,4))   + 101
 ctrl_h1@states["catch FarNorth",]         <- c(1:5, rep(6,7))   + 201
 ctrl_h1@states["catch Offshore_Trawl",]   <- c(1:7, rep(8,5))   + 301
 
-ctrl_h1@f.vars["catch N_Chile",]          <- c(0,0,1,1,rep(2,8))
-ctrl_h1@f.vars["catch SC_Chile_PS",]      <- c(0,1,1,1,rep(2,8)) + 101
-ctrl_h1@f.vars["catch FarNorth",]         <- c(0,1,2,rep(3,9))   + 201
-ctrl_h1@f.vars["catch Offshore_Trawl",]   <- c(0)                + 301
+ctrl_h1@f.vars["catch N_Chile",]          <- c(0,0,0,1,1,rep(2,7))
+ctrl_h1@f.vars["catch SC_Chile_PS",]      <- c(0,0,0,rep(2,9)) + 101
+ctrl_h1@f.vars["catch FarNorth",]         <- c(0,0,1,2,rep(3,8))   + 201
+ctrl_h1@f.vars["catch Offshore_Trawl",]   <- c(rep(0,5),rep(1,7))+ 301
 
 ctrl_h1@obs.vars["catch N_Chile",]        <- c(1, rep(2,11))
 ctrl_h1@obs.vars["catch SC_Chile_PS",]    <- c(rep(1,12))       + 101
@@ -144,16 +144,16 @@ ctrl_h1@obs.vars["Offshore_CPUE_early", 1] <- 407
 ctrl_h1@obs.vars["Offshore_CPUE_late",  1] <- 407   # shared with early
 
 # biomassTreat: 0=SSB (DEPM), 2=exploitable biomass (CPUEs), 5=total biomass (acoustics)
-ctrl_h1@biomassTreat["Chile_AcousCS_early"] <- 5
-ctrl_h1@biomassTreat["Chile_AcousCS_late"]  <- 5
-ctrl_h1@biomassTreat["Chile_AcousN"]        <- 5
-ctrl_h1@biomassTreat["Chile_CPUE_early"]    <- 2
-ctrl_h1@biomassTreat["Chile_CPUE_late"]     <- 2
-ctrl_h1@biomassTreat["DEPM"]               <- 0
-ctrl_h1@biomassTreat["Peru_Acoustic"]       <- 5
-ctrl_h1@biomassTreat["Peru_CPUE"]          <- 2
-ctrl_h1@biomassTreat["Offshore_CPUE_early"] <- 2
-ctrl_h1@biomassTreat["Offshore_CPUE_late"]  <- 2
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Chile_AcousCS_early")] <- 5
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Chile_AcousCS_late")]  <- 5
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Chile_AcousN")]        <- 5
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Chile_CPUE_early")]    <- 2
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Chile_CPUE_late")]     <- 2
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "DEPM")]                <- 0
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Peru_Acoustic")]       <- 5
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Peru_CPUE")]           <- 2
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Offshore_CPUE_early")] <- 2
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Offshore_CPUE_late")-4]  <- 2
 
 ctrl_h1 <- update(ctrl_h1)
 ctrl_h1@residuals <- TRUE
@@ -172,10 +172,10 @@ build_ctrl <- function(stk, idx_sub) {
   ctrl@states["catch FarNorth",]         <- c(1:5, rep(6,7))  + 201
   ctrl@states["catch Offshore_Trawl",]   <- c(1:7, rep(8,5))  + 301
 
-  ctrl@f.vars["catch N_Chile",]          <- c(0,0,1,1,rep(2,8))
-  ctrl@f.vars["catch SC_Chile_PS",]      <- c(0,1,1,1,rep(2,8)) + 101
-  ctrl@f.vars["catch FarNorth",]         <- c(0,1,2,rep(3,9))   + 201
-  ctrl@f.vars["catch Offshore_Trawl",]   <- c(0)                + 301
+  ctrl@f.vars["catch N_Chile",]          <- c(0,0,0,1,1,rep(2,7))
+  ctrl@f.vars["catch SC_Chile_PS",]      <- c(0,0,0,rep(2,9))     + 101
+  ctrl@f.vars["catch FarNorth",]         <- c(0,0,1,2,rep(3,8))   + 201
+  ctrl@f.vars["catch Offshore_Trawl",]   <- c(rep(0,5),rep(1,7))  + 301
 
   ctrl@obs.vars["catch N_Chile",]        <- c(1, rep(2,11))
   ctrl@obs.vars["catch SC_Chile_PS",]    <- c(rep(1,12))       + 101
@@ -194,8 +194,8 @@ build_ctrl <- function(stk, idx_sub) {
                Offshore_CPUE_early=2,  Offshore_CPUE_late=2)
 
   for (nm in names(idx_sub)) {
-    ctrl@obs.vars[nm, 1]  <- obs_map[nm]
-    ctrl@biomassTreat[nm] <- bio_map[nm]
+    ctrl@obs.vars[nm, 1]                      <- obs_map[nm]
+    ctrl@biomassTreat[which(names(ctrl@fleets) == nm)-4] <- bio_map[nm]
   }
 
   ctrl <- update(ctrl)
@@ -238,7 +238,7 @@ for (peel in seq_len(n_retro)) {
 
   idx_peel            <- FLIndices(lapply(idx_h1[in_range], window, end = yr_end))
   ctrl_peel           <- build_ctrl(stk_peel, idx_peel)
-  ctrl_peel@residuals <- TRUE
+  ctrl_peel@residuals <- FALSE
 
   retro_h1[[as.character(yr_end)]] <- tryCatch(
     FLSAM(stk_peel, idx_peel, ctrl_peel),
