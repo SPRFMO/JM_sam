@@ -10,14 +10,45 @@
 #       residual-based stability diagnostics are available.
 # ============================================================
 
+# If run standalone (not via 01_run_assessment.R), parse jjm_ssb here.
+# When sourced from 01_run_assessment.R the object already exists.
+if (!exists("jjm_ssb")) {
+  .parse_jjm_ssb <- function(rep_file, max_year) {
+    if (!file.exists(rep_file)) return(NULL)
+    lines     <- readLines(rep_file, warn = FALSE)
+    sec_idx   <- grep("^\\$[A-Za-z_]+$", lines)
+    sec_names <- sub("^\\$", "", lines[sec_idx])
+    i_ssb <- sec_idx[sec_names == "SSB"]
+    if (length(i_ssb) == 0) return(NULL)
+    pos  <- which(sec_idx == i_ssb)
+    end  <- if (pos < length(sec_idx)) sec_idx[pos + 1] - 1 else length(lines)
+    dlines <- trimws(lines[(i_ssb + 1):end])
+    dlines <- dlines[nchar(dlines) > 0]
+    mat    <- do.call(rbind, lapply(dlines,
+                function(l) as.numeric(strsplit(l, "\\s+")[[1]])))
+    if (ncol(mat) < 5) return(NULL)
+    mat <- mat[mat[, 1] <= max_year, , drop = FALSE]
+    data.frame(year = as.integer(mat[, 1]), value = mat[, 2],
+               lbnd = mat[, 4], ubnd = mat[, 5])
+  }
+  jjm_ssb <- .parse_jjm_ssb(
+    rep_file = "../assessment/results/h1_1.14_1_R.rep",
+    max_year = as.integer(range(stk_h1)["maxyear"])
+  )
+}
+
 ##################################################
 ## Retrospective - SSB and Fbar
 ##################################################
 retro_ssb  <- do.call(rbind, lapply(names(retro_h1), function(nm) {
-  d <- ssb(retro_h1[[nm]]); d$peel <- nm; d
+  fit <- retro_h1[[nm]]
+  if (is.null(fit) || inherits(fit, "try-error")) return(NULL)
+  d <- ssb(fit); d$peel <- nm; d
 }))
 retro_fbar <- do.call(rbind, lapply(names(retro_h1), function(nm) {
-  d <- fbar(retro_h1[[nm]]); d$peel <- nm; d
+  fit <- retro_h1[[nm]]
+  if (is.null(fit) || inherits(fit, "try-error")) return(NULL)
+  d <- fbar(fit); d$peel <- nm; d
 }))
 retro_ssb$peel  <- factor(retro_ssb$peel,  levels = names(retro_h1))
 retro_fbar$peel <- factor(retro_fbar$peel, levels = names(retro_h1))
@@ -107,8 +138,9 @@ extract_loo <- function(fun, fits, base_fit) {
   base_df         <- fun(base_fit)
   base_df$dropped <- "Full model"
   loo_df <- do.call(rbind, lapply(names(fits), function(grp) {
-    if (is.null(fits[[grp]])) return(NULL)
-    df         <- fun(fits[[grp]])
+    fit <- fits[[grp]]
+    if (is.null(fit) || inherits(fit, "try-error")) return(NULL)
+    df         <- fun(fit)
     df$dropped <- grp
     df
   }))
@@ -125,20 +157,23 @@ plot_loo <- function(dat, ylab, title, ref_df = NULL) {
   base  <- subset(dat, dropped == "Full model")
   loodf <- subset(dat, dropped != "Full model")
 
-  n_loo  <- length(unique(loodf$dropped))
-  pal    <- RColorBrewer::brewer.pal(max(3, n_loo), "Set2")[seq_len(n_loo)]
+  # Okabe-Ito palette: 7 colorblind-safe, high-contrast hues.
+  # Black is reserved for the full-model line so is excluded here.
+  okabe_ito <- c("#E69F00", "#56B4E9", "#009E73",
+                 "#D55E00", "#CC79A7", "#0072B2", "#F0E442")
+  grps <- unique(loodf$dropped)
+  pal  <- setNames(okabe_ito[seq_along(grps)], grps)
 
   p <- ggplot() +
     # LOO lines — coloured by dropped survey
     geom_line(data = loodf,
               aes(x = year, y = value, colour = dropped),
-              linewidth = 0.85, alpha = 0.85) +
+              linewidth = 0.9, alpha = 0.9) +
     # Full model on top — thicker black
     geom_line(data = base,
               aes(x = year, y = value),
-              colour = "black", linewidth = 1.4) +
-    scale_colour_manual(values = setNames(pal, unique(loodf$dropped)),
-                        name = "Dropped survey") +
+              colour = "black", linewidth = 1.5) +
+    scale_colour_manual(values = pal, name = "Dropped survey") +
     ylim(0, NA) +
     labs(title = title,
          subtitle = "Black = full model; coloured lines = model with that survey group dropped",
