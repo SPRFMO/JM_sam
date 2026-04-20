@@ -143,17 +143,17 @@ ctrl_h1@obs.vars["Peru_CPUE",          1]  <- 406
 ctrl_h1@obs.vars["Offshore_CPUE_early", 1] <- 407
 ctrl_h1@obs.vars["Offshore_CPUE_late",  1] <- 407   # shared with early
 
-# biomassTreat: 0=SSB (DEPM), 2=exploitable biomass (CPUEs), 5=total biomass (acoustics)
+# biomassTreat: 0=SSB (DEPM), 5=total biomass (acoustics + CPUEs)
 ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Chile_AcousCS_early")] <- 5
 ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Chile_AcousCS_late")]  <- 5
 ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Chile_AcousN")]        <- 5
-ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Chile_CPUE_early")]    <- 2
-ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Chile_CPUE_late")]     <- 2
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Chile_CPUE_early")]    <- 5
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Chile_CPUE_late")]     <- 5
 ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "DEPM")]                <- 0
 ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Peru_Acoustic")]       <- 5
-ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Peru_CPUE")]           <- 2
-ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Offshore_CPUE_early")] <- 2
-ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Offshore_CPUE_late")-4]  <- 2
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Peru_CPUE")]           <- 5
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Offshore_CPUE_early")] <- 5
+ctrl_h1@biomassTreat[which(names(ctrl_h1@fleets) == "Offshore_CPUE_late")]  <- 5
 
 ctrl_h1 <- update(ctrl_h1)
 ctrl_h1@residuals <- TRUE
@@ -189,13 +189,56 @@ build_ctrl <- function(stk, idx_sub) {
                Offshore_CPUE_early=407, Offshore_CPUE_late=407)
   bio_map <- c(Chile_AcousCS_early=5,  Chile_AcousCS_late=5,
                Chile_AcousN=5,
-               Chile_CPUE_early=2,     Chile_CPUE_late=2,
-               DEPM=0, Peru_Acoustic=5, Peru_CPUE=2,
-               Offshore_CPUE_early=2,  Offshore_CPUE_late=2)
+               Chile_CPUE_early=5,     Chile_CPUE_late=5,
+               DEPM=0, Peru_Acoustic=5, Peru_CPUE=5,
+               Offshore_CPUE_early=5,  Offshore_CPUE_late=5)
 
   for (nm in names(idx_sub)) {
     ctrl@obs.vars[nm, 1]                      <- obs_map[nm]
-    ctrl@biomassTreat[which(names(ctrl@fleets) == nm)-4] <- bio_map[nm]
+    ctrl@biomassTreat[which(names(ctrl@fleets) == nm)] <- bio_map[nm]
+  }
+
+  ctrl <- update(ctrl)
+  ctrl@residuals <- FALSE
+  ctrl
+}
+
+# ============================================================
+# Alternative helper: FLSAM defaults for catch f.vars / obs.vars
+# Catch fleets get one shared f.var and one shared obs.var per
+# fleet (all ages same code) — the FLSAM.control() defaults.
+# States, survey obs.vars and biomassTreat are identical to
+# build_ctrl.  Use for model comparisons / sensitivity runs.
+# ============================================================
+build_ctrl_alt <- function(stk, idx_sub) {
+  ctrl <- FLSAM.control(stk, idx_sub)
+  ctrl@plus.group[] <- 1
+
+  # States: same age-grouping as main model
+  ctrl@states["catch N_Chile",]          <- c(1:7, rep(8,5))
+  ctrl@states["catch SC_Chile_PS",]      <- c(1:8, rep(9,4))  + 101
+  ctrl@states["catch FarNorth",]         <- c(1:5, rep(6,7))  + 201
+  ctrl@states["catch Offshore_Trawl",]   <- c(1:7, rep(8,5))  + 301
+
+  # f.vars and obs.vars for catch fleets: FLSAM defaults retained
+  # (FLSAM.control assigns one shared parameter per fleet across
+  # all ages — no override needed here)
+
+  # Survey obs.vars: shared pairs for split series (same as build_ctrl)
+  obs_map <- c(Chile_AcousCS_early=401, Chile_AcousCS_late=401,
+               Chile_AcousN=402,
+               Chile_CPUE_early=403,   Chile_CPUE_late=403,
+               DEPM=404, Peru_Acoustic=405, Peru_CPUE=406,
+               Offshore_CPUE_early=407, Offshore_CPUE_late=407)
+  bio_map <- c(Chile_AcousCS_early=5,  Chile_AcousCS_late=5,
+               Chile_AcousN=5,
+               Chile_CPUE_early=5,     Chile_CPUE_late=5,
+               DEPM=0, Peru_Acoustic=5, Peru_CPUE=5,
+               Offshore_CPUE_early=5,  Offshore_CPUE_late=5)
+
+  for (nm in names(idx_sub)) {
+    ctrl@obs.vars[nm, 1]                                    <- obs_map[nm]
+    ctrl@biomassTreat[which(names(ctrl@fleets) == nm)] <- bio_map[nm]
   }
 
   ctrl <- update(ctrl)
@@ -237,8 +280,8 @@ for (peel in seq_len(n_retro)) {
   }
 
   idx_peel            <- FLIndices(lapply(idx_h1[in_range], window, end = yr_end))
-  ctrl_peel           <- build_ctrl(stk_peel, idx_peel)
-  ctrl_peel@residuals <- FALSE
+  ctrl_peel           <- build_ctrl_alt(stk_peel, idx_peel)
+  ctrl_peel@residuals <- TRUE
 
   retro_h1[[as.character(yr_end)]] <- tryCatch(
     FLSAM(stk_peel, idx_peel, ctrl_peel),
@@ -317,6 +360,46 @@ sel.pat        <- merge(f(sam_h1), fbar(sam_h1), by = "year", suffixes = c(".f",
 sel.pat$sel    <- sel.pat$value.f / sel.pat$value.fbar
 sel.pat$age    <- as.numeric(as.character(sel.pat$age))
 sel.pat$pentad <- sprintf("%i's", floor(sel.pat$year / 5) * 5)
+
+# ============================================================
+# Parse JJM h1_1.14 SSB for model comparison overlay
+# jjm_ssb  : data.frame(year, value, lbnd, ubnd)  — or NULL if file absent
+# ============================================================
+.parse_jjm_ssb <- function(rep_file, max_year) {
+  if (!file.exists(rep_file)) {
+    warning("JJM rep file not found: ", rep_file)
+    return(NULL)
+  }
+  lines     <- readLines(rep_file, warn = FALSE)
+  sec_idx   <- grep("^\\$[A-Za-z_]+$", lines)
+  sec_names <- sub("^\\$", "", lines[sec_idx])
+
+  i_ssb <- sec_idx[sec_names == "SSB"]
+  if (length(i_ssb) == 0) { warning("$SSB not found in rep file"); return(NULL) }
+
+  pos  <- which(sec_idx == i_ssb)
+  end  <- if (pos < length(sec_idx)) sec_idx[pos + 1] - 1 else length(lines)
+  dlines <- trimws(lines[(i_ssb + 1):end])
+  dlines <- dlines[nchar(dlines) > 0]
+  mat    <- do.call(rbind, lapply(dlines,
+              function(l) as.numeric(strsplit(l, "\\s+")[[1]])))
+
+  if (ncol(mat) < 5) { warning("Unexpected $SSB format"); return(NULL) }
+  # columns: year | estimate | SE | lower_95 | upper_95
+  mat <- mat[mat[, 1] <= max_year, , drop = FALSE]
+  data.frame(year  = as.integer(mat[, 1]),
+             value = mat[, 2],
+             lbnd  = mat[, 4],
+             ubnd  = mat[, 5])
+}
+
+jjm_ssb <- .parse_jjm_ssb(
+  rep_file  = "../assessment/results/h1_1.14_1_R.rep",
+  max_year  = as.integer(range(stk_h1)["maxyear"])
+)
+if (!is.null(jjm_ssb))
+  cat(sprintf("JJM SSB loaded: %i years (%i\u2013%i)\n",
+              nrow(jjm_ssb), min(jjm_ssb$year), max(jjm_ssb$year)))
 
 # ============================================================
 # Source diagnostic scripts

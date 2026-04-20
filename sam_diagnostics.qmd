@@ -53,12 +53,6 @@ SPRFMO for several years and entered a critical delivery phase in 2026. The JM M
 Task Team (TT), chaired by J. Ianelli, is working through a structured programme
 following the Carruthers et al. (2024) MSE roadmap framework. 
 
-Ten working papers are planned across these three venues (JM-WP-BM-01 through
-JM-WP-SC14-03). The work described in this document feeds primarily into
-**JM-WP-BM-01** (*SC13 Base Assessment Model: Documentation and Simplified
-Alternatives for OM Conditioning*) and **JM-WP-BM-04** (*Stock–Recruitment,
-Environmental Scenarios, and OM Design*).
-
 A central challenge identified in BM-01 is that the SC13 JJM model is **difficult to
 transfer directly into an MSE Operating Model** for four reasons:
 
@@ -328,26 +322,28 @@ assessment cycle. There are four catch fleets and seven biomass-only survey indi
 |---|---|---|
 | Chile_AcousCS | Acoustic survey (central-south Chile) | Total biomass index |
 | Chile_AcousN | Acoustic survey (north Chile) | Total biomass index |
-| Chile_CPUE | Chilean CPUE | Exploitable biomass index |
+| Chile_CPUE | Chilean CPUE | Total biomass index |
 | DEPM | Daily egg production method (spawning biomass) | SSB index |
 | Peru_Acoustic | Acoustic survey (Peru) | Total biomass index |
-| Peru_CPUE | Peruvian CPUE | Exploitable biomass index |
-| Offshore_CPUE | Offshore pelagic trawl CPUE | Exploitable biomass index |
+| Peru_CPUE | Peruvian CPUE | Total biomass index |
+| Offshore_CPUE | Offshore pelagic trawl CPUE | Total biomass index |
 
 : Survey indices used in the SAM fit {#tbl-surveys}
 
 All indices are treated as biomass indices (age = "all") using `FLIndex` objects with
-`type = "biomass"`. Acoustic surveys index total biomass; CPUE indices (Chile, Peru,
-Offshore) are fitted as exploitable biomass, reflecting selective targeting of fish; 
-DEPM is fitted as an SSB index as it directly estimates egg production
-from spawning adults.
+`type = "biomass"`. Acoustic surveys and CPUE indices (Chile, Peru, Offshore) are all
+fitted as total biomass indices (`biomassTreat = 5`); DEPM is fitted as an SSB index
+as it directly estimates egg production from spawning adults.
 
 ## SAM control configuration
 
-Four catch fleets share age-coupled F states while they are estimated independent from 
-each other and all have separate variance parameters. Surveys receive independent observation
-variance indices. Selectivity (modelled as states: F) is free to vary by age group
-within each fleet.
+Four catch fleets share age-coupled N states (linked cohorts) while F states are estimated
+independently for each fleet. Within each catch fleet, selectivity-at-age is controlled by
+shared N-state groups (e.g. ages 1–7 linked for N_Chile, ages 1–8 for SC_Chile_PS).
+F-variance and observation-variance parameters for the catch fleets use a single shared
+parameter per fleet. Surveys each receive an
+independent observation-variance parameter and are linked to total
+biomass except DEPM which uses SSB.
 
 # Standard Diagnostics {#sec-standard}
 
@@ -362,7 +358,7 @@ show_diag("h1_stock_trajectory.png")
 ```
 
 ```{r fig-trajectory-zoom}
-#| fig-cap: "Recent (post-2002) stock trajectory. Shaded band = 95% CI."
+#| fig-cap: "Recent (post-2002) stock trajectory. Shaded band = 95% CI. Dashed red line (SSB panel) = JJM h1_1.14 SSB ± 95% CI."
 show_diag("h1_stock_trajectory_zoom.png")
 ```
 
@@ -396,7 +392,7 @@ show_diag("h1_fvars.png")
 
 Selectivity is expressed as F/Fbar at each age and fleet, grouped by five-year periods
 to show temporal trends. Changes in shape over time may indicate non-stationarity in
-fleet behaviour or stock demography. There is substantial change in all fleets from relatively dome shaped to increasing and vice versa. 
+fleet behaviour or stock demography. There is substantial change in all fleets from relatively dome shaped to increasing and vice versa. The model estimates very high selection at oldest ages in the South Central fleet which is not expected to be driven by high mortality but probably due to a lack of availability. 
 
 ```{r fig-sel}
 #| fig-cap: "Estimated selectivity (F/Fbar) by fleet and five-year period. Each line is one year; colour scale = year."
@@ -517,7 +513,7 @@ of $|\rho| > 0.20$ for SSB or $|\rho| > 0.30$ for F are commonly considered
 problematic [@mohn1999retrospective].
 
 ```{r fig-retro-ssb}
-#| fig-cap: "Retrospective SSB trajectories (10 peels). Black line and shaded band = full model; coloured lines = retrospective peels."
+#| fig-cap: "Retrospective SSB trajectories (10 peels). Black line and shaded band = full model; coloured lines = retrospective peels; dashed green = JJM h1_1.14 SSB ± 95% CI."
 show_diag("h1_retro_ssb.png")
 ```
 
@@ -541,7 +537,7 @@ Large retrospective patterns can arise from several sources: (i) re-estimation o
 
 ### Catchability across peels
 
-Catchability ($\log q$) is re-estimated in each peeled model. A stable $\log q$ across peels indicates that the parameter is identified by the bulk of the time-series and is not being pulled by a small number of terminal-year observations. Large drifts — particularly in the most recent peels — suggest that new data are revising the model's view of that survey's relationship to biomass, which in turn propagates into a retrospective SSB revision.
+Catchability ($\log q$) is re-estimated in each peeled model. A stable $\log q$ across peels indicates that the parameter is identified by the bulk of the time-series and is not being pulled by a small number of terminal-year observations. Large drifts — particularly in the most recent peels — suggest that new data are revising the model's view of that survey's relationship to biomass, which in turn propagates into a retrospective SSB revision. Especially the acoustic North and Peruvian CPUE show consistent trends in estimated catchability. In both cases, catcahbility increases meaning that the indices 'see' more fish. Declines are visible for the Offshore CPUE and the Chilean CPUE. 
 
 ```{r fig-retro-q}
 #| fig-cap: "Estimated log-catchability per survey across retrospective peels. x-axis = terminal year of each peel; a stable line indicates the parameter is well-identified throughout the series."
@@ -550,7 +546,7 @@ show_diag("h1_retro_q_params.png")
 
 ### Observation variance across peels
 
-Observation-variance ($\sigma^2$) parameters govern how much weight is placed on each data source. If $\sigma^2$ for a survey drifts as years are removed, it signals that the noise structure inferred from recent data differs from the historical period — often a sign of a trend in data quality or catchability that the model absorbs into the variance estimate rather than the mean.
+Observation-variance ($\sigma^2$) parameters govern how much weight is placed on each data source. If $\sigma^2$ for a survey drifts as years are removed, it signals that the noise structure inferred from recent data differs from the historical period — often a sign of a trend in data quality or catchability that the model absorbs into the variance estimate rather than the mean. The observation variance of the offshore and South Cental fishery has increased considerably over the past 5 years, but are still estimated at low levels. There seems to be some model instability which shows as sudden drops in observation variance for the Far North fleet. 
 
 ```{r fig-retro-obsvar}
 #| fig-cap: "Estimated observation variances across retrospective peels, split by catch fleets (top) and survey indices (bottom)."
@@ -580,6 +576,16 @@ For each survey and year, the standard deviation of the standardised residual ac
 show_diag("h1_retro_residual_stability.png")
 ```
 
+### Terminal-year residuals: drivers of the retrospective pattern
+
+The retrospective pattern arises because the model mis-fits certain observations at the terminal year of each peel. The plot below shows, for each fleet and each peel, the ratio of the observed to model-predicted biomass at that peel's terminal year. A ratio consistently above 1 (blue) means the model persistently underpredicts that fleet's terminal observation — causing it to revise the stock trajectory upward when a new year is added, which produces a negative Mohn's ρ for SSB. The reverse applies for ratios below 1 (red). Surveys or catch fleets with consistently one-sided bars are the primary drivers of the retrospective.
+
+```{r fig-retro-topchange}
+#| fig-cap: "Observed / predicted biomass ratio at the terminal year of each retrospective peel, per fleet. Blue = model underpredicts; red = overpredicts. Consistent direction = systematic mis-fit driving the retrospective pattern."
+#| fig-height: 8
+show_diag("h1_retro_residual_topchange.png")
+```
+
 # Leave-one-out Analysis {#sec-loo}
 
 Leave-one-out (LOO) analysis refits the model seven times, each time omitting one
@@ -594,7 +600,7 @@ because it is in conflict with other inputs. Surveys whose removal causes little
 are relatively redundant given the remaining data.
 
 ```{r fig-loo-ssb}
-#| fig-cap: "Leave-one-out SSB. Each panel shows the full model (black line, grey CI) and the model with that survey group dropped (red line, red CI)."
+#| fig-cap: "Leave-one-out SSB. Black line = full model; coloured lines = model with that survey group dropped (no CI shown). Dashed green = JJM h1_1.14 SSB."
 show_diag("h1_loo_ssb.png")
 ```
 
@@ -690,7 +696,7 @@ structural conflicts. A strong negative correlation between two fleets means one
 over-predicts systematically when the other under-predicts — a diagnostic signal for
 fleet compensation. Positive correlations suggest fleets respond coherently to the
 same environmental or stock signal. Especially the offshore CPUE contradicts in trend with 
-the Peruvian Acoustic and Chilean Acoustic CS. 
+the Chilean SC catch data, although the correlation with the Chilean SC CPUE is high. 
 
 ```{r fig-crosscor}
 #| fig-cap: "Cross-correlation of mean annual residuals between all fleets. Red = negative correlation (conflict); blue = positive (co-vary)."
@@ -714,7 +720,7 @@ show_diag("h1_survey_pairwise.png")
 The same cohort should be detectable across all catch fleets as it ages through the
 population. If catch-at-age data from different fleets show diverging relative
 abundance for the same cohort at the same age, it indicates either gear selectivity
-conflicts, spatial overlap differences, or data inconsistencies.
+conflicts, spatial overlap differences, or data inconsistencies. There is very poor cohort tracking capabilities for the different catch@age data. For example, the 2018 cohort is picked up markedly different by 3 out of the 4 fleets. 
 
 ```{r fig-cohort}
 #| fig-cap: "Relative catch-at-age by fleet for recent cohorts. Each fleet is a colour; divergence between lines indicates fleet conflict on cohort strength or selectivity."
@@ -862,6 +868,9 @@ show_diag("h1_selectivity_byblock.png")
 blk_file <- file.path(diag_dir, "h1_selectivity_blocks.csv")
 if (file.exists(blk_file)) {
   blk <- read.csv(blk_file)
+  # Last block of each fleet has no trailing boundary → rank is NA; show as "—"
+  blk$boundary_rank <- ifelse(is.na(blk$boundary_rank), "\u2014",
+                               as.character(blk$boundary_rank))
   knitr::kable(
     blk[, c("fleet", "block", "start_year", "end_year",
             "n_years", "catch_pct", "peak_age", "within_var",
@@ -874,6 +883,7 @@ if (file.exists(blk_file)) {
       "**Catch %** = percentage of total fleet catch in that block.",
       "**Boundary rank** = importance of the boundary ending this block",
       "(1 = most important, highest rank = drop first to reduce blocks).",
+      "'—' = final block (no subsequent boundary).",
       "Within-block variance is the mean temporal variance in normalised",
       "selectivity across ages; lower = more stable selectivity shape."),
     digits    = 5

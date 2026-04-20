@@ -70,14 +70,30 @@ df.rec  <- rec(sam_h1);  df.rec$quant  <- "Recruitment"
 df.traj <- rbind(df.ssb, df.fbar, df.rec)
 
 png("diagnostics/h1_stock_trajectory_zoom.png", width = 1200, height = 1600, res = 150)
-print(
-  ggplot(subset(df.traj, year > 2002), aes(x = year, y = value)) +
-    geom_ribbon(aes(ymin = lbnd, ymax = ubnd), alpha = 0.3) +
-    geom_line() +
-    ylim(0, NA) +
-    facet_wrap(~quant, scales = "free", ncol = 1) +
-    theme_bw()
-)
+p_traj <- ggplot(subset(df.traj, year > 2002), aes(x = year, y = value)) +
+  geom_ribbon(aes(ymin = lbnd, ymax = ubnd), alpha = 0.3) +
+  geom_line() +
+  ylim(0, NA) +
+  facet_wrap(~quant, scales = "free", ncol = 1) +
+  labs(x = "Year", y = NULL) +
+  theme_bw()
+
+# Overlay JJM h1_1.14 SSB on the SSB panel (dashed tomato line)
+if (!is.null(jjm_ssb)) {
+  jjm_ssb_sub        <- subset(jjm_ssb, year > 2002)
+  jjm_ssb_sub$quant  <- "SSB"   # must match facet label
+  p_traj <- p_traj +
+    geom_ribbon(data = jjm_ssb_sub,
+                aes(x = year, ymin = lbnd, ymax = ubnd),
+                fill = "tomato", alpha = 0.15, colour = NA,
+                inherit.aes = FALSE) +
+    geom_line(data = jjm_ssb_sub,
+              aes(x = year, y = value),
+              colour = "tomato", linetype = "dashed", linewidth = 0.9,
+              inherit.aes = FALSE) +
+    labs(caption = "SAM: solid black; JJM h1_1.14: dashed red (SSB panel only)")
+}
+print(p_traj)
 dev.off()
 
 ##################################################
@@ -98,68 +114,31 @@ print(
 dev.off()
 
 ##################################################
-## Observation variance by data source
-## Two-panel figure (catch / survey), colour-coded by dataset.
-## Each unique obs.var parameter appears once, labelled with the
-## fleet/survey name and (for catch) the age or age-range it covers.
+## Observation variance by fleet and age
+## One facet per fleet, fixed y-axis across all panels.
 ##################################################
-obv            <- obs.var(sam_h1)
-obv$base       <- base_fleet(obv$fleet)
-obv$group      <- ifelse(obv$fleet %in% catch_fleets, "Catch fleets", "Survey indices")
-# Short label: drop "catch " prefix; tag age for catch fleets
-obv$label      <- paste0(
-  sub("catch ", "", obv$base),
-  ifelse(is.na(obv$age), "", paste0(" (age ", obv$age, ")"))
-)
+obv             <- obs.var(sam_h1)
+obv$fleet_clean <- sub("^catch ", "", obv$fleet)
+obv$label       <- paste0(obv$fleet_clean,
+                           ifelse(is.na(obv$age), "", paste0(" a", obv$age)))
+obv$age_label   <- ifelse(is.na(obv$age), "idx", as.character(obv$age))
+obv$age_label   <- factor(obv$age_label,
+                           levels = c(as.character(sort(unique(na.omit(obv$age)))), "idx"))
 
-# Colour palette: one colour per base dataset (4 catch + 7 survey = 11 groups)
-all_bases   <- unique(obv$base)
-n_bases     <- length(all_bases)
-base_colors <- setNames(
-  c(RColorBrewer::brewer.pal(4, "Dark2"),           # catch fleets
-    RColorBrewer::brewer.pal(min(7, n_bases - 4), "Set1")),   # surveys
-  all_bases
-)
+y_max <- max(obv$ubnd, na.rm = TRUE)
 
-# Sort within each panel by value (ascending)
-obv_catch  <- obv[obv$group == "Catch fleets",   ]
-obv_survey <- obv[obv$group == "Survey indices",  ]
-obv_catch  <- obv_catch[order(obv_catch$value),   ]
-obv_survey <- obv_survey[order(obv_survey$value), ]
-obv_catch$label  <- factor(obv_catch$label,  levels = obv_catch$label)
-obv_survey$label <- factor(obv_survey$label, levels = obv_survey$label)
-
-p_obv_catch <- ggplot(obv_catch, aes(x = label, y = value, fill = base)) +
-  geom_col(width = 0.75) +
-  coord_flip() +
-  scale_fill_manual(values = base_colors, name = "Fleet") +
-  labs(title = "Catch fleets", x = NULL, y = "Observation variance") +
-  theme_bw() +
-  theme(legend.position = "right",
-        axis.text.y = element_text(size = 10))
-
-p_obv_survey <- ggplot(obv_survey, aes(x = label, y = value, fill = base)) +
-  geom_col(width = 0.75) +
-  coord_flip() +
-  scale_fill_manual(values = base_colors, name = "Survey") +
-  labs(title = "Survey indices", x = NULL, y = "Observation variance") +
-  theme_bw() +
-  theme(legend.position = "right",
-        axis.text.y = element_text(size = 10))
-
-# Height proportional to number of rows in each panel
-n_catch_rows  <- nrow(obv_catch)
-n_survey_rows <- nrow(obv_survey)
-
-png("diagnostics/h1_observation_var.png",
-    width  = 1600,
-    height = 200 + (n_catch_rows + n_survey_rows) * 55,
-    res    = 150)
+png("diagnostics/h1_observation_var.png", width = 2400, height = 1600, res = 150)
 print(
-  p_obv_catch / p_obv_survey +
-    plot_layout(heights = c(n_catch_rows, n_survey_rows)) +
-    plot_annotation(title = "Observation variances by data source",
-                    theme = theme(plot.title = element_text(face = "bold", size = 13)))
+  ggplot(obv, aes(x = age_label, y = value)) +
+    geom_col(aes(fill = fleet_clean), width = 0.7, show.legend = FALSE) +
+    geom_errorbar(aes(ymin = lbnd, ymax = ubnd), width = 0.25) +
+    facet_wrap(~fleet_clean, scales = "fixed") +
+    scale_y_continuous(limits = c(0, y_max * 1.05)) +
+    labs(title = "Observation variances by fleet and age",
+         x = "Age", y = "Observation variance") +
+    theme_bw() +
+    theme(strip.text  = element_text(size = 8),
+          axis.text.x = element_text(size = 7))
 )
 dev.off()
 
@@ -190,15 +169,19 @@ print(
     theme(axis.text.x = element_text(size = 7))
 )
 dev.off()
-
+try(dev.off())
 ##################################################
 ## Correlation matrix of model parameters
-## Large canvas + lower res so parameter labels have room to breathe.
+## cor.plot() (or corrplot internally) may open an extra device.
+## We pin the PNG device number and close any extras before closing it.
 ##################################################
-png("diagnostics/h1_cor_params.png", width = 3000, height = 3000, res = 200)
-par(mar = c(8, 8, 4, 2))   # generous margins for axis labels
+png("diagnostics/h1_cor_params.png", width = 1800, height = 1800, res = 120)
+png_dev <- dev.cur()
+par(mar = c(6, 6, 2, 1))
 cor.plot(sam_h1)
-dev.off()
+while (dev.cur() != png_dev) dev.off()   # close any extra devices
+dev.off()                                 # close the PNG device
+
 
 ##################################################
 ## Catch residuals (bubble plot, one panel per fleet)

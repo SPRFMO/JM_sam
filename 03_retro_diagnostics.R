@@ -28,8 +28,7 @@ base_fbar <- fbar(sam_h1); base_fbar$peel <- base_yr_chr
 retro_ssb_all  <- rbind(retro_ssb,  base_ssb)
 retro_fbar_all <- rbind(retro_fbar, base_fbar)
 
-png("diagnostics/h1_retro_ssb.png", width = 1600, height = 900, res = 150)
-print(
+p_retro_ssb <-
   ggplot(retro_ssb_all, aes(x = year, y = value, colour = peel, group = peel)) +
     geom_line(data = subset(retro_ssb_all, peel != base_yr_chr), alpha = 0.7) +
     geom_line(data = subset(retro_ssb_all, peel == base_yr_chr),
@@ -38,9 +37,28 @@ print(
                 aes(ymin = lbnd, ymax = ubnd), alpha = 0.2, colour = NA, fill = "black") +
     coord_cartesian(xlim = c(max(retro_ssb_all$year) - 15, max(retro_ssb_all$year))) +
     ylim(0, NA) +
-    labs(title = "Retrospective - SSB", x = "Year", y = "SSB", colour = "Final year") +
+    labs(title = "Retrospective \u2014 SSB",
+         x = "Year", y = "SSB", colour = "Final year") +
     theme_bw()
-)
+
+# Overlay JJM h1_1.14 SSB as a dashed green reference line
+if (!is.null(jjm_ssb)) {
+  jjm_retro_sub <- subset(jjm_ssb,
+    year >= max(retro_ssb_all$year) - 15 & year <= max(retro_ssb_all$year))
+  p_retro_ssb <- p_retro_ssb +
+    geom_ribbon(data = jjm_retro_sub,
+                aes(x = year, ymin = lbnd, ymax = ubnd),
+                fill = "forestgreen", alpha = 0.12, colour = NA,
+                inherit.aes = FALSE) +
+    geom_line(data = jjm_retro_sub,
+              aes(x = year, y = value),
+              colour = "forestgreen", linetype = "dashed", linewidth = 1.0,
+              inherit.aes = FALSE) +
+    labs(caption = "Dashed green = JJM h1_1.14 SSB \u00b1 95% CI")
+}
+
+png("diagnostics/h1_retro_ssb.png", width = 1600, height = 900, res = 150)
+print(p_retro_ssb)
 dev.off()
 
 png("diagnostics/h1_retro_fbar.png", width = 1600, height = 900, res = 150)
@@ -101,39 +119,55 @@ loo_ssb_all  <- extract_loo(ssb,  loo_fits, sam_h1)
 loo_fbar_all <- extract_loo(fbar, loo_fits, sam_h1)
 loo_rec_all  <- extract_loo(rec,  loo_fits, sam_h1)
 
-plot_loo <- function(dat, ylab, title) {
+plot_loo <- function(dat, ylab, title, ref_df = NULL) {
+  # All LOO lines overlaid; no CI ribbons; full model thicker black line.
+  # Colour is mapped to `dropped` so each LOO run gets a distinct hue.
   base  <- subset(dat, dropped == "Full model")
   loodf <- subset(dat, dropped != "Full model")
-  ggplot() +
-    geom_ribbon(data = base,
-                aes(x = year, ymin = lbnd, ymax = ubnd),
-                fill = "grey70", alpha = 0.5) +
+
+  n_loo  <- length(unique(loodf$dropped))
+  pal    <- RColorBrewer::brewer.pal(max(3, n_loo), "Set2")[seq_len(n_loo)]
+
+  p <- ggplot() +
+    # LOO lines — coloured by dropped survey
+    geom_line(data = loodf,
+              aes(x = year, y = value, colour = dropped),
+              linewidth = 0.85, alpha = 0.85) +
+    # Full model on top — thicker black
     geom_line(data = base,
               aes(x = year, y = value),
-              colour = "black", linewidth = 1) +
-    geom_ribbon(data = loodf,
-                aes(x = year, ymin = lbnd, ymax = ubnd),
-                fill = "tomato", alpha = 0.25) +
-    geom_line(data = loodf,
-              aes(x = year, y = value),
-              colour = "tomato", linewidth = 0.9) +
-    facet_wrap(~dropped, ncol = 2) +
+              colour = "black", linewidth = 1.4) +
+    scale_colour_manual(values = setNames(pal, unique(loodf$dropped)),
+                        name = "Dropped survey") +
     ylim(0, NA) +
     labs(title = title,
-         subtitle = "Black/grey = full model; red = model with survey group dropped",
+         subtitle = "Black = full model; coloured lines = model with that survey group dropped",
          x = "Year", y = ylab) +
-    theme_bw()
+    theme_bw() +
+    theme(legend.position = "right")
+
+  # Optional JJM reference line
+  if (!is.null(ref_df)) {
+    p <- p +
+      geom_line(data = ref_df,
+                aes(x = year, y = value),
+                colour = "forestgreen", linetype = "dashed", linewidth = 1.0,
+                inherit.aes = FALSE) +
+      labs(caption = "Dashed green = JJM h1_1.14 SSB")
+  }
+  p
 }
 
-png("diagnostics/h1_loo_ssb.png",  width = 1800, height = 1400, res = 150)
-print(plot_loo(loo_ssb_all,  "SSB",         "Leave-one-out \u2014 SSB"))
+png("diagnostics/h1_loo_ssb.png",  width = 1600, height = 900, res = 150)
+print(plot_loo(loo_ssb_all, "SSB", "Leave-one-out \u2014 SSB",
+               ref_df = jjm_ssb))
 dev.off()
 
-png("diagnostics/h1_loo_fbar.png", width = 1800, height = 1400, res = 150)
+png("diagnostics/h1_loo_fbar.png", width = 1600, height = 900, res = 150)
 print(plot_loo(loo_fbar_all, "Mean F",      "Leave-one-out \u2014 Fbar"))
 dev.off()
 
-png("diagnostics/h1_loo_rec.png",  width = 1800, height = 1400, res = 150)
+png("diagnostics/h1_loo_rec.png",  width = 1600, height = 900, res = 150)
 print(plot_loo(loo_rec_all,  "Recruitment", "Leave-one-out \u2014 Recruitment"))
 dev.off()
 
@@ -178,22 +212,31 @@ retro_q <- do.call(rbind, lapply(names(retro_h1), function(nm) {
 }))
 
 if (!is.null(retro_q) && nrow(retro_q) > 0) {
-  # Sort peel_yr so lines connect in order
   retro_q <- retro_q[order(retro_q$peel_yr), ]
 
-  png("diagnostics/h1_retro_q_params.png", width = 1800, height = 900, res = 150)
+  # Colour by period (early / late / single) — at most 2 lines per facet,
+  # so 3 colours suffice regardless of how many fleets there are in total.
+  retro_q$period <- ifelse(grepl("_early$", retro_q$fleet), "Early",
+                    ifelse(grepl("_late$",  retro_q$fleet), "Late", "Single"))
+
+  png("diagnostics/h1_retro_q_params.png", width = 1800, height = 1200, res = 150)
   print(
-    ggplot(retro_q, aes(x = peel_yr, y = value, colour = base, group = base)) +
+    ggplot(retro_q, aes(x = peel_yr, y = value,
+                        colour = period, group = fleet)) +
       geom_line(linewidth = 0.9) +
       geom_point(size = 2.5) +
-      scale_colour_brewer(palette = "Set1", name = "Survey") +
+      scale_colour_manual(
+        values = c("Early" = "steelblue", "Late" = "tomato", "Single" = "grey30"),
+        name   = "Period") +
       scale_x_continuous(breaks = unique(retro_q$peel_yr)) +
+      facet_wrap(~base, scales = "free_y", ncol = 2) +
       labs(title = "Catchability parameter estimates across retrospective peels",
-           subtitle = "x-axis = terminal year of each peel; stability = consistent log(q) regardless of which years are included",
+           subtitle = "Early/late split series shown separately within each panel",
            x = "Terminal year of peel", y = "log(q)") +
       theme_bw() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
-            legend.position = "right")
+      theme(axis.text.x    = element_text(angle = 45, hjust = 1),
+            legend.position = "right",
+            strip.text      = element_text(face = "bold"))
   )
   dev.off()
 }
@@ -214,21 +257,56 @@ retro_obv <- do.call(rbind, lapply(names(retro_h1), function(nm) {
 if (!is.null(retro_obv) && nrow(retro_obv) > 0) {
   retro_obv <- retro_obv[order(retro_obv$peel_yr), ]
 
+  # Deduplicate: ages sharing the same estimated parameter have identical
+  # values within a fleet × peel. Keep one row per unique value and label
+  # it with the age range it represents.
+  retro_obv_uniq <- do.call(rbind, lapply(
+    split(retro_obv, list(retro_obv$fleet, retro_obv$peel_yr), drop = TRUE),
+    function(df) {
+      seen <- c()
+      rows <- list()
+      for (i in order(df$age, na.last = FALSE)) {
+        v <- round(df$value[i], 10)
+        if (v %in% seen) next
+        seen <- c(seen, v)
+        match_ages <- sort(df$age[round(df$value, 10) == v])
+        match_ages <- match_ages[!is.na(match_ages)]
+        if (length(match_ages) == 0) {
+          age_lbl <- "idx"
+        } else if (length(match_ages) == 1) {
+          age_lbl <- paste0("a", match_ages)
+        } else if (all(diff(match_ages) == 1)) {
+          age_lbl <- paste0("a", min(match_ages), "-", max(match_ages))
+        } else {
+          age_lbl <- paste0("a", paste(match_ages, collapse = ","))
+        }
+        row              <- df[i, , drop = FALSE]
+        row$age_label    <- age_lbl
+        row$param_label  <- paste0(sub("catch ", "", row$base),
+                                   " (", age_lbl, ")")
+        rows[[length(rows) + 1]] <- row
+      }
+      do.call(rbind, rows)
+    }
+  ))
+
   png("diagnostics/h1_retro_obsvar_params.png", width = 1800, height = 1200, res = 150)
   print(
-    ggplot(retro_obv, aes(x = peel_yr, y = value, colour = label, group = label)) +
+    ggplot(retro_obv_uniq,
+           aes(x = peel_yr, y = value,
+               colour = param_label, group = param_label)) +
       geom_line(linewidth = 0.9) +
       geom_point(size = 2) +
-      scale_x_continuous(breaks = unique(retro_obv$peel_yr)) +
+      scale_x_continuous(breaks = unique(retro_obv_uniq$peel_yr)) +
       scale_colour_discrete(name = NULL) +
       facet_wrap(~group, scales = "free_y", ncol = 1) +
       labs(title = "Observation variance estimates across retrospective peels",
-           subtitle = "Drift in sigma indicates that the data density or noise structure changes near the terminal year",
+           subtitle = "One line per unique estimated parameter; legend shows which ages share that parameter",
            x = "Terminal year of peel", y = "Observation variance") +
       theme_bw() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
+      theme(axis.text.x    = element_text(angle = 45, hjust = 1),
             legend.position = "right",
-            strip.text = element_text(face = "bold"))
+            strip.text      = element_text(face = "bold"))
   )
   dev.off()
 }
@@ -305,6 +383,74 @@ if (!is.null(retro_res_all) && nrow(retro_res_all) > 0) {
         theme_bw() +
         theme(panel.grid = element_blank(),
               axis.text.y = element_text(size = 9))
+    )
+    dev.off()
+  }
+
+  # --- Terminal-year residuals: what is driving the retrospective pattern ---
+  # For each retro peel, extract residuals at its terminal year only.
+  # These are the observations the model is struggling to reconcile when
+  # it has just that much data — the direct cause of the retrospective pattern.
+  # For catch fleets (age-structured): aggregate to obs/pred ratio using
+  # the geometric mean across ages.  For surveys: one obs per year directly.
+  terminal_res <- do.call(rbind, lapply(
+    setdiff(names(retro_h1), base_yr_chr),   # exclude full model
+    function(nm) {
+      peel_yr <- as.integer(nm)
+      r <- tryCatch(residuals(retro_h1[[nm]]), error = function(e) NULL)
+      if (is.null(r) || nrow(r) == 0) return(NULL)
+      term <- r[r$year == peel_yr & !is.na(r$std.res), ]
+      if (nrow(term) == 0) return(NULL)
+      do.call(rbind, lapply(split(term, term$fleet), function(df) {
+        data.frame(
+          fleet       = df$fleet[1],
+          peel_yr     = peel_yr,
+          # obs/pred ratio: exp(mean(log.obs)) / exp(mean(log.mdl))
+          # = geometric mean ratio, works for both surveys and catch-at-age
+          bio_obs     = exp(mean(df$log.obs, na.rm = TRUE)),
+          bio_pred    = exp(mean(df$log.mdl, na.rm = TRUE)),
+          mean_stdres = mean(df$std.res,    na.rm = TRUE)
+        )
+      }))
+    }
+  ))
+
+  if (!is.null(terminal_res) && nrow(terminal_res) > 0) {
+    # Use full fleet name for faceting — base_fleet() would merge early/late
+    # into one panel causing their points to overlap or stack incorrectly.
+    terminal_res$fleet_label <- sub("^catch ", "", terminal_res$fleet)
+    terminal_res$type        <- ifelse(terminal_res$fleet %in% catch_fleets,
+                                       "Catch", "Survey")
+    # obs/pred ratio: > 1 = model underpredicts, < 1 = overpredicts
+    terminal_res$ratio       <- terminal_res$bio_obs / terminal_res$bio_pred
+
+    png("diagnostics/h1_retro_residual_topchange.png", width = 1800, height = 1400, res = 150)
+    print(
+      # Lollipop anchored at ratio = 1 (perfect fit).
+      # Segment runs from 1 to the ratio; point sits at the ratio.
+      # Colour encodes direction; no stacking ambiguity.
+      ggplot(terminal_res,
+             aes(x = peel_yr, colour = ratio > 1)) +
+        geom_hline(yintercept = 1, linetype = "dashed", colour = "grey40") +
+        geom_segment(aes(xend = peel_yr, y = 1, yend = ratio),
+                     linewidth = 1.0) +
+        geom_point(aes(y = ratio), size = 3) +
+        facet_wrap(~fleet_label, ncol = 3, scales = "free_y") +
+        scale_colour_manual(values = c("TRUE"  = "steelblue",
+                                       "FALSE" = "tomato"),
+                            labels = c("TRUE"  = "Obs > Pred (underpredicted)",
+                                       "FALSE" = "Obs < Pred (overpredicted)"),
+                            name = NULL) +
+        scale_x_continuous(breaks = unique(terminal_res$peel_yr)) +
+        labs(title = "Observed / predicted biomass ratio at the terminal year of each retrospective peel",
+             subtitle = paste0("Each point = one peel; dashed line = perfect fit (ratio = 1).\n",
+                               "Blue = model underpredicts; red = overpredicts.\n",
+                               "Consistent direction across peels = systematic mis-fit driving the retrospective."),
+             x = "Peel terminal year", y = "Obs / Predicted ratio") +
+        theme_bw() +
+        theme(axis.text.x    = element_text(angle = 45, hjust = 1, size = 7),
+              strip.text      = element_text(size = 8),
+              legend.position = "top")
     )
     dev.off()
   }
