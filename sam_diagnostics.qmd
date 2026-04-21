@@ -28,19 +28,42 @@ diag_dir <- normalizePath(
   mustWork = FALSE
 )
 
+dir.create(diag_dir, showWarnings = FALSE, recursive = TRUE)
+
+make_placeholder_diag <- function(path, label = NULL) {
+  png(path, width = 1400, height = 900, res = 150)
+  plot.new()
+  text(0.5, 0.58, "Diagnostic figure unavailable", cex = 1.6, font = 2)
+  text(0.5, 0.47, basename(path), cex = 1.1)
+  if (!is.null(label) && nzchar(label)) {
+    text(0.5, 0.38, label, cex = 0.9)
+  }
+  dev.off()
+}
+
 required_diag <- file.path(diag_dir, "h1_stock_trajectory.png")
 if (!file.exists(required_diag)) {
-  if (!file.exists("output_h1.RData")) {
-    stop(
-      "Missing diagnostics/ outputs and output_h1.RData. ",
-      "Run 01_run_assessment.R first or provide output_h1.RData."
+  if (file.exists("output_h1.RData")) {
+    tryCatch(
+      source("generate_diagnostics_assets.R"),
+      error = function(e) {
+        warning(
+          "Could not generate diagnostic assets automatically: ",
+          conditionMessage(e)
+        )
+      }
     )
   }
-  source("generate_diagnostics_assets.R")
 }
 
 show_diag <- function(file, caption = NULL, width = "100%") {
   path <- file.path(diag_dir, file)
+  if (!file.exists(path)) {
+    make_placeholder_diag(
+      path,
+      "Render pipeline not run, required package missing, or figure generation failed."
+    )
+  }
   knitr::include_graphics(path)
 }
 ```
