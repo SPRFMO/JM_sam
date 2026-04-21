@@ -178,9 +178,25 @@ try(dev.off())
 png("diagnostics/h1_cor_params.png", width = 1800, height = 1800, res = 120)
 png_dev <- dev.cur()
 par(mar = c(6, 6, 2, 1))
-cor.plot(sam_h1)
-while (dev.cur() != png_dev) dev.off()   # close any extra devices
-dev.off()                                 # close the PNG device
+tryCatch(
+  cor.plot(sam_h1),
+  error = function(e) {
+    plot.new()
+    text(
+      0.5, 0.55,
+      "Parameter correlation plot unavailable",
+      cex = 1.4,
+      font = 2
+    )
+    text(
+      0.5, 0.45,
+      paste("cor.plot() failed:", conditionMessage(e)),
+      cex = 0.9
+    )
+  }
+)
+while (dev.cur() > 1 && dev.cur() != png_dev) dev.off()   # close any extra devices
+if (dev.cur() == png_dev) dev.off()                       # close the PNG device
 
 
 ##################################################
