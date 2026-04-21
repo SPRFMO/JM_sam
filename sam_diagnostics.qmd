@@ -24,8 +24,20 @@ knitr::opts_chunk$set(
 
 diag_dir <- normalizePath(
   file.path(dirname(knitr::current_input(dir = TRUE)), "diagnostics"),
-  winslash = "/"
+  winslash = "/",
+  mustWork = FALSE
 )
+
+required_diag <- file.path(diag_dir, "h1_stock_trajectory.png")
+if (!file.exists(required_diag)) {
+  if (!file.exists("output_h1.RData")) {
+    stop(
+      "Missing diagnostics/ outputs and output_h1.RData. ",
+      "Run 01_run_assessment.R first or provide output_h1.RData."
+    )
+  }
+  source("generate_diagnostics_assets.R")
+}
 
 show_diag <- function(file, caption = NULL, width = "100%") {
   path <- file.path(diag_dir, file)
