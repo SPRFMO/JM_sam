@@ -57,17 +57,26 @@ dev.off()
 ##################################################
 ## Stock trajectory
 ##################################################
+df.ssb  <- ssb(sam_h1);  df.ssb$quant  <- "SSB"
+df.fbar <- fbar(sam_h1); df.fbar$quant <- "Fbar"
+df.rec  <- rec(sam_h1);  df.rec$quant  <- "Recruitment"
+df.traj_all <- rbind(df.ssb, df.fbar, df.rec)
+
 png("diagnostics/h1_stock_trajectory.png", width = 1600, height = 1200, res = 150)
-print(plot(sam_h1))
+print(
+  ggplot(df.traj_all, aes(x = year, y = value)) +
+    geom_ribbon(aes(ymin = lbnd, ymax = ubnd), alpha = 0.25, fill = "grey70") +
+    geom_line(linewidth = 0.9, colour = "black") +
+    facet_wrap(~quant, scales = "free_y", ncol = 1) +
+    labs(title = "Model-estimated stock trajectory", x = "Year", y = NULL) +
+    theme_bw()
+)
 dev.off()
 
 ##################################################
 ## Stock trajectory zoom (SSB / Fbar / Rec)
 ##################################################
-df.ssb  <- ssb(sam_h1);  df.ssb$quant  <- "SSB"
-df.fbar <- fbar(sam_h1); df.fbar$quant <- "Fbar"
-df.rec  <- rec(sam_h1);  df.rec$quant  <- "Recruitment"
-df.traj <- rbind(df.ssb, df.fbar, df.rec)
+df.traj <- df.traj_all
 
 png("diagnostics/h1_stock_trajectory_zoom.png", width = 1200, height = 1600, res = 150)
 p_traj <- ggplot(subset(df.traj, year > 2002), aes(x = year, y = value)) +
@@ -146,10 +155,19 @@ dev.off()
 ## Observation variance vs CV
 ##################################################
 png("diagnostics/h1_variance_vs_cv.png", width = 1200, height = 900, res = 150)
-plot(obv$value, obv$CV, xlab = "Observation variance", ylab = "CV of estimate",
-     log = "x", pch = 16, col = as.integer(factor(obv$fleet)),
-     main = "Observation variance vs uncertainty")
-text(obv$value, obv$CV, obv$label, pos = 4, cex = 0.75, xpd = NA)
+print(
+  ggplot(subset(obv, is.finite(value) & is.finite(CV) & value > 0),
+         aes(x = value, y = CV, colour = fleet_clean, label = label)) +
+    geom_point(size = 2.5) +
+    geom_text(hjust = 0, nudge_x = 0.02, size = 2.8, show.legend = FALSE) +
+    scale_x_log10() +
+    labs(title = "Observation variance vs uncertainty",
+         x = "Observation variance",
+         y = "CV of estimate",
+         colour = "Fleet") +
+    theme_bw() +
+    theme(legend.position = "bottom")
+)
 dev.off()
 
 ##################################################
@@ -172,31 +190,35 @@ dev.off()
 try(dev.off())
 ##################################################
 ## Correlation matrix of model parameters
-## cor.plot() (or corrplot internally) may open an extra device.
-## We pin the PNG device number and close any extras before closing it.
 ##################################################
-png("diagnostics/h1_cor_params.png", width = 1800, height = 1800, res = 120)
-png_dev <- dev.cur()
-par(mar = c(6, 6, 2, 1))
-tryCatch(
-  cor.plot(sam_h1),
-  error = function(e) {
-    plot.new()
-    text(
-      0.5, 0.55,
-      "Parameter correlation plot unavailable",
-      cex = 1.4,
-      font = 2
-    )
-    text(
-      0.5, 0.45,
-      paste("cor.plot() failed:", conditionMessage(e)),
-      cex = 0.9
-    )
-  }
-)
-while (dev.cur() > 1 && dev.cur() != png_dev) dev.off()   # close any extra devices
-if (dev.cur() == png_dev) dev.off()                       # close the PNG device
+param_vcov <- tryCatch(vcov(sam_h1), error = function(e) NULL)
+if (!is.null(param_vcov)) {
+  param_cor <- cov2cor(param_vcov)
+  param_names <- make.unique(colnames(param_cor))
+  colnames(param_cor) <- param_names
+  rownames(param_cor) <- make.unique(rownames(param_cor))
+  cor_df <- as.data.frame(as.table(param_cor))
+  names(cor_df) <- c("param_x", "param_y", "correlation")
+  cor_df$param_x <- factor(cor_df$param_x, levels = param_names)
+  cor_df$param_y <- factor(cor_df$param_y, levels = rev(param_names))
+
+  png("diagnostics/h1_cor_params.png", width = 1800, height = 1800, res = 120)
+  print(
+    ggplot(cor_df, aes(x = param_x, y = param_y, fill = correlation)) +
+      geom_tile(colour = "white", linewidth = 0.15) +
+      scale_fill_gradient2(low = "#b2182b", mid = "white", high = "#2166ac",
+                           midpoint = 0, limits = c(-1, 1)) +
+      labs(title = "Pairwise correlation matrix of estimated parameters",
+           x = NULL, y = NULL, fill = "Correlation") +
+      theme_bw() +
+      theme(
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 6),
+        axis.text.y = element_text(size = 6),
+        panel.grid = element_blank()
+      )
+  )
+  dev.off()
+}
 
 
 ##################################################
@@ -237,21 +259,67 @@ dev.off()
 
 ##################################################
 ## Process error - N / M
-## Collapse harvest to total F so all slots share one area.
 ##################################################
-stk_h1_procerr <- stk_h1_fit
-h_dn           <- dimnames(harvest(stk_h1_fit)); h_dn[["area"]] <- "unique"
-harvest(stk_h1_procerr) <- FLQuant(
-  apply(harvest(stk_h1_fit), c(1, 2, 3, 4, 6), sum, na.rm = TRUE),
-  dimnames = h_dn
+stock_n_df  <- as.data.frame(stk_h1_fit@stock.n)
+stock_wt_df <- as.data.frame(stk_h1_fit@stock.wt)
+m_df        <- as.data.frame(stk_h1_fit@m)
+f_df        <- as.data.frame(harvest(stk_h1_fit))
+
+total_f_df <- aggregate(data ~ age + year, data = f_df, FUN = sum, na.rm = TRUE)
+names(total_f_df)[names(total_f_df) == "data"] <- "total_f"
+
+n_curr <- stock_n_df[, c("age", "year", "data")]
+names(n_curr)[3] <- "stock_n"
+n_prev <- n_curr
+n_prev$age  <- n_prev$age + 1
+n_prev$year <- n_prev$year + 1
+names(n_prev)[3] <- "stock_n_prev"
+
+z_prev <- merge(
+  total_f_df,
+  m_df[, c("age", "year", "data")],
+  by = c("age", "year"),
+  all = FALSE
 )
+names(z_prev)[names(z_prev) == "data"] <- "m"
+z_prev$z <- z_prev$total_f + z_prev$m
+z_prev$age  <- z_prev$age + 1
+z_prev$year <- z_prev$year + 1
+z_prev <- z_prev[, c("age", "year", "z")]
+
+proc_n_df <- merge(n_curr, n_prev, by = c("age", "year"))
+proc_n_df <- merge(proc_n_df, z_prev, by = c("age", "year"))
+proc_n_df <- merge(proc_n_df, stock_wt_df[, c("age", "year", "data")], by = c("age", "year"))
+names(proc_n_df)[names(proc_n_df) == "data"] <- "stock_wt"
+proc_n_df <- subset(proc_n_df,
+                    stock_n > 0 & stock_n_prev > 0 & is.finite(z) & is.finite(stock_wt))
+proc_n_df$proc_err <- log(proc_n_df$stock_n) - (log(proc_n_df$stock_n_prev) - proc_n_df$z)
+proc_n_df$weight_scale <- proc_n_df$stock_wt / max(proc_n_df$stock_wt, na.rm = TRUE)
+proc_n_df$proc_err_scaled <- proc_n_df$proc_err * proc_n_df$weight_scale
 
 png("diagnostics/h1_procerr_N.png", width = 1600, height = 900, res = 150)
-procerr.plot(stk_h1_procerr, weight = "stock.wt", type = "n", rel = TRUE)
+print(
+  ggplot(proc_n_df, aes(x = year, y = age, fill = proc_err_scaled)) +
+    geom_tile() +
+    scale_fill_gradient2(low = "#b2182b", mid = "white", high = "#2166ac", midpoint = 0) +
+    labs(title = "Process errors in log-N", x = "Year", y = "Age", fill = "Scaled\nerror") +
+    theme_bw()
+)
 dev.off()
 
+proc_m_df <- merge(total_f_df, total_f_df, by = "age", suffixes = c("", "_prev"))
+proc_m_df <- subset(proc_m_df, year == year_prev + 1 & total_f > 0 & total_f_prev > 0)
+proc_m_df$proc_err <- log(proc_m_df$total_f) - log(proc_m_df$total_f_prev)
+proc_m_df$year <- proc_m_df$year
+
 png("diagnostics/h1_procerr_M.png", width = 1600, height = 900, res = 150)
-procerr.plot(stk_h1_procerr, weight = "stock.wt", type = "mort", rel = TRUE)
+print(
+  ggplot(proc_m_df, aes(x = year, y = age, fill = proc_err)) +
+    geom_tile() +
+    scale_fill_gradient2(low = "#b2182b", mid = "white", high = "#2166ac", midpoint = 0) +
+    labs(title = "Process errors in log-mortality", x = "Year", y = "Age", fill = "Delta\nlog(F)") +
+    theme_bw()
+)
 dev.off()
 
 ##################################################
