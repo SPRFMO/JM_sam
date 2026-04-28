@@ -1,0 +1,35 @@
+---
+title: "Jack Mackerel SAM Results"
+format:
+  html:
+    output-file: "index.html"
+    self-contained: true
+    theme: cosmo
+    toc: false
+    anchor-sections: false
+    number-sections: false
+---
+
+{{< include _includes/sprfmo-banner.html >}}
+
+```{=html}
+<div class="paper-title">Jack Mackerel SAM Results</div>
+```
+
+This page collects rendered SAM diagnostics now owned by the `JM_sam`
+repository. The active report should be updated here; the retained
+`JM_SCW_prep/sam` render is a frozen migration artifact from an earlier commit.
+
+## Results
+
+| Result | Source | Link |
+|---|---|---|
+| Active JM_sam diagnostics | `JM_sam` repository | [Open report](sam_diagnostics.html) |
+| Frozen JM_SCW_prep SAM diagnostics | `JM_SCW_prep/sam`, commit `f5a21f0` | [Open retained report](scw_prep_f5a21f0/sam_diagnostics.html) |
+
+## Notes
+
+- `JM_sam` is the canonical repository for the SAM workflow and active report.
+- The `JM_SCW_prep/sam` report is copied into `scw_prep_f5a21f0/` only to retain
+  the earlier rendered result for provenance.
+- New SAM changes should be made in `JM_sam`, not in `JM_SCW_prep/sam`.

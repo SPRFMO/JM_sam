@@ -13,9 +13,10 @@ conditioning choices for the jack mackerel MSE process, including:
 - index uncertainty, catchability, and fleet-conflict diagnostics;
 - retrospective and leave-one-out behavior.
 
-The repository was split from the `sam/` directory of `JM_SCW_prep` so that the
-SAM workflow, rendered diagnostics, and supporting data products can be developed
-and versioned independently.
+The repository was split from the `sam/` directory of `JM_SCW_prep` and is now
+the canonical home for the SAM workflow, rendered diagnostics, and supporting
+data products. The former `JM_SCW_prep/sam` folder should be treated as retired
+after migration.
 
 ## Contents
 
@@ -34,6 +35,6 @@ The rendered diagnostics report is available through GitHub Pages:
 <https://sprfmo.github.io/JM_sam/>
 
 The source report file is `sam_diagnostics.qmd`, and the rendered HTML is
-available in both `sam_diagnostics.html` and `index.html`. To refresh the site,
-run the assessment and diagnostics scripts, render `sam_diagnostics.qmd` with
-Quarto, and copy the rendered report to `index.html`.
+available as `sam_diagnostics.html`. The site landing page is generated from
+`index.qmd` and links to the active diagnostics report plus a frozen
+`JM_SCW_prep/sam` render from commit `f5a21f0` for migration provenance.

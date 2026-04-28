@@ -4,17 +4,24 @@ date: "`r format(Sys.time(), '%d %B %Y')`"
 author: "Niels T. Hintzen"
 format:
   html:
+    output-file: "sam_diagnostics.html"
     code-fold: true
     code-summary: "Show code"
     fig-cap-location: bottom
-    number-sections: true
-    theme: readable
+    number-sections: false
+    theme: cosmo
     toc: true
     toc-depth: 3
     toc-location: right
     lightbox: true
 bibliography: refs.bib
 ---
+
+{{< include _includes/sprfmo-banner.html >}}
+
+```{=html}
+<div class="paper-title">SAM Diagnostics for the Jack Mackerel Assessment</div>
+```
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
