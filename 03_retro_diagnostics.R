@@ -488,6 +488,18 @@ if (!is.null(retro_res_all) && nrow(retro_res_all) > 0) {
               legend.position = "top")
     )
     dev.off()
+  } else {
+    png("diagnostics/h1_retro_residual_topchange.png", width = 1800, height = 1400, res = 150)
+    print(
+      ggplot(data.frame(x = 0, y = 0), aes(x, y)) +
+        annotate("text", x = 0, y = 0,
+                 label = "Terminal-year retrospective residuals unavailable",
+                 size = 7) +
+        coord_cartesian(xlim = c(-1, 1), ylim = c(-1, 1), expand = FALSE) +
+        theme_void() +
+        labs(title = "Observed / predicted biomass ratio at the terminal year of each retrospective peel")
+    )
+    dev.off()
   }
 
   # --- Catch-fleet residual spaghetti ---

@@ -72,11 +72,21 @@ runs_test <- function(x) {
   x   <- x[!is.na(x)]
   sgn <- sign(x)
   n   <- length(sgn)
-  if (n < 4) return(data.frame(n = n, n_runs = NA, p_value = NA, result = "too few obs"))
+  empty_result <- function(result, n_runs = NA) {
+    data.frame(
+      n = n,
+      n_runs = n_runs,
+      expected_runs = NA_real_,
+      z = NA_real_,
+      p_value = NA_real_,
+      result = result
+    )
+  }
+  if (n < 4) return(empty_result("too few obs"))
   runs <- sum(sgn[-1] != sgn[-n]) + 1
   n1   <- sum(sgn > 0); n2 <- sum(sgn < 0)
   if (n1 == 0 || n2 == 0)
-    return(data.frame(n = n, n_runs = runs, p_value = NA, result = "all same sign"))
+    return(empty_result("all same sign", runs))
   mu   <- (2 * n1 * n2 / n) + 1
   sig2 <- (2 * n1 * n2 * (2 * n1 * n2 - n)) / (n^2 * (n - 1))
   z    <- (runs - mu) / sqrt(sig2)
@@ -112,7 +122,7 @@ print(
   ggplot(runs_plot, aes(x = fleet, y = p_display, fill = result)) +
     geom_col() +
     geom_text(data = subset(runs_plot, !is.na(na_label)),
-              aes(label = na_label, y = 0.5),
+              aes(x = fleet, label = na_label, y = 0.5),
               colour = "white", size = 3, fontface = "italic",
               hjust = 0.5, inherit.aes = FALSE) +
     geom_hline(yintercept = 0.05, linetype = "dashed", colour = "red") +
@@ -145,17 +155,28 @@ implied_q <- do.call(rbind, lapply(split(implied_q, implied_q$fleet), function(d
 }))
 
 png("diagnostics/h1_q_trend.png", width = 1800, height = 1200, res = 150)
-print(
-  ggplot(implied_q, aes(x = year, y = rel_log_q)) +
-    geom_hline(yintercept = 0, linetype = "dashed", colour = "grey50") +
-    geom_point(aes(colour = rel_log_q > 0), size = 2) +
-    geom_smooth(method = "lm", se = TRUE, colour = "black", linewidth = 0.8) +
-    scale_colour_manual(values = c("TRUE" = "steelblue", "FALSE" = "tomato"), guide = "none") +
-    facet_wrap(~fleet, scales = "free_y", ncol = 2) +
-    labs(title = "Implied catchability trend: log(obs/SSB) centred (slope \u2260 0 = q drift)",
-         x = "Year", y = "Relative log(q)") +
-    theme_bw()
-)
+if (nrow(implied_q) > 0 && all(c("fleet", "year", "rel_log_q") %in% names(implied_q))) {
+  print(
+    ggplot(implied_q, aes(x = year, y = rel_log_q)) +
+      geom_hline(yintercept = 0, linetype = "dashed", colour = "grey50") +
+      geom_point(aes(colour = rel_log_q > 0), size = 2) +
+      geom_smooth(method = "lm", se = TRUE, colour = "black", linewidth = 0.8) +
+      scale_colour_manual(values = c("TRUE" = "steelblue", "FALSE" = "tomato"), guide = "none") +
+      facet_wrap(~fleet, scales = "free_y", ncol = 2) +
+      labs(title = "Implied catchability trend: log(obs/SSB) centred (slope != 0 = q drift)",
+           x = "Year", y = "Relative log(q)") +
+      theme_bw()
+  )
+} else {
+  print(
+    ggplot(data.frame(x = 0, y = 0), aes(x, y)) +
+      annotate("text", x = 0, y = 0,
+               label = "Implied catchability trends unavailable\nwith current residual output.",
+               size = 5) +
+      labs(title = "Implied catchability trend", x = NULL, y = NULL) +
+      theme_void()
+  )
+}
 dev.off()
 
 # ------------------------------------------------------------------
@@ -200,7 +221,20 @@ dev.off()
 # prediction residual in the terminal year of that peel?
 # Large deviations across peels = poor predictive skill for that fleet.
 # ------------------------------------------------------------------
-hindcast_res <- do.call(rbind, lapply(names(retro_h1), function(nm) {
+rbind_fill <- function(rows) {
+  rows <- Filter(Negate(is.null), rows)
+  if (length(rows) == 0) return(NULL)
+
+  all_cols <- unique(unlist(lapply(rows, names)))
+  rows <- lapply(rows, function(x) {
+    missing <- setdiff(all_cols, names(x))
+    for (nm in missing) x[[nm]] <- NA
+    x[all_cols]
+  })
+  do.call(rbind, rows)
+}
+
+hindcast_res <- rbind_fill(lapply(names(retro_h1), function(nm) {
   r <- tryCatch(residuals(retro_h1[[nm]]), error = function(e) NULL)
   if (is.null(r)) return(NULL)
   r <- subset(r, fleet %in% survey_fleets)
@@ -219,19 +253,31 @@ colnames(base_res_survey)[3] <- "base_std_res"
 terminal_preds <- merge(terminal_preds, base_res_survey, by = c("fleet", "year"), all.x = TRUE)
 
 png("diagnostics/h1_hindcast_residuals.png", width = 1800, height = 1200, res = 150)
-print(
-  ggplot(terminal_preds, aes(x = year, y = std.res)) +
-    geom_hline(yintercept = 0, linetype = "dashed") +
-    geom_segment(aes(xend = year, yend = 0), colour = "grey70") +
-    geom_point(aes(colour = abs(std.res) > 2), size = 3) +
-    geom_point(aes(y = base_std_res), shape = 4, size = 3, colour = "black") +
-    scale_colour_manual(values = c("FALSE" = "steelblue", "TRUE" = "tomato"),
-                        name = "|residual| > 2") +
-    facet_wrap(~fleet, scales = "free_y", ncol = 2) +
-    labs(title = "Hindcast terminal-year residuals per survey\n(dot = peel prediction, cross = base model)",
-         x = "Year", y = "Std. residual") +
-    theme_bw()
-)
+if (nrow(terminal_preds) > 0 && "fleet" %in% names(terminal_preds)) {
+  print(
+    ggplot(terminal_preds, aes(x = year, y = std.res)) +
+      geom_hline(yintercept = 0, linetype = "dashed") +
+      geom_segment(aes(xend = year, yend = 0), colour = "grey70") +
+      geom_point(aes(colour = abs(std.res) > 2), size = 3) +
+      geom_point(aes(y = base_std_res), shape = 4, size = 3, colour = "black") +
+      scale_colour_manual(values = c("FALSE" = "steelblue", "TRUE" = "tomato"),
+                          name = "|residual| > 2") +
+      facet_wrap(~fleet, scales = "free_y", ncol = 2) +
+      labs(title = "Hindcast terminal-year residuals per survey\n(dot = peel prediction, cross = base model)",
+           x = "Year", y = "Std. residual") +
+      theme_bw()
+  )
+} else {
+  print(
+    ggplot(data.frame(x = 0, y = 0), aes(x, y)) +
+      annotate("text", x = 0, y = 0,
+               label = "Hindcast terminal residuals unavailable\nOSA residual calculations were skipped.",
+               size = 5) +
+      labs(title = "Hindcast terminal-year residuals per survey",
+           x = NULL, y = NULL) +
+      theme_void()
+  )
+}
 dev.off()
 
 # ------------------------------------------------------------------
@@ -267,8 +313,20 @@ pair_plots <- Filter(Negate(is.null), pair_plots)
 n_cols <- 3
 png("diagnostics/h1_survey_pairwise.png",
     width  = n_cols * 600,
-    height = ceiling(length(pair_plots) / n_cols) * 600, res = 150)
-print(wrap_plots(pair_plots, ncol = n_cols))
+    height = max(600, ceiling(length(pair_plots) / n_cols) * 600), res = 150)
+if (length(pair_plots) > 0) {
+  print(wrap_plots(pair_plots, ncol = n_cols))
+} else {
+  print(
+    ggplot(data.frame(x = 0, y = 0), aes(x, y)) +
+      annotate("text", x = 0, y = 0,
+               label = "No valid survey-pair comparisons available.",
+               size = 5) +
+      labs(title = "Inter-survey consistency: pairwise index scatter",
+           x = NULL, y = NULL) +
+      theme_void()
+  )
+}
 dev.off()
 
 # ------------------------------------------------------------------

@@ -1,6 +1,26 @@
 library(FLCore)
 library(FLSAM)
 
+# Avoid expensive one-step-ahead residual calculations when FLSAM
+# back-fills residuals during SAM2FLR conversion. This keeps residual
+# columns available using cheap log-observed-minus-log-predicted values.
+skip_flsam_osa_residuals <- function() {
+  sam2flr <- get("SAM2FLR", envir = asNamespace("FLSAM"))
+
+  replace_osa_call <- function(expr) {
+    if (!is.call(expr)) return(expr)
+    if (identical(expr[[1]], as.name("oneStepPredict"))) {
+      return(quote(data.frame(residual = fit$data$logobs - fit$rep$predObs)))
+    }
+    as.call(lapply(as.list(expr), replace_osa_call))
+  }
+
+  body(sam2flr) <- replace_osa_call(body(sam2flr))
+  assignInNamespace("SAM2FLR", sam2flr, ns = "FLSAM")
+}
+
+skip_flsam_osa_residuals()
+
 # ============================================================
 # Load FLStock and FLIndices objects from RDA files
 # ============================================================
@@ -49,6 +69,54 @@ biomass_to_FLIndex <- function(x) {
 
 idx_h1 <- FLIndices(lapply(idx_h1, biomass_to_FLIndex))
 
+subset_indices <- function(x, nms) {
+  FLIndices(setNames(lapply(nms, function(nm) x[[nm]]), nms))
+}
+
+survey_obs_groups <- list(
+  Chile_AcousCS = c("Chile_AcousCS_early", "Chile_AcousCS_late", "Chile_AcousCS"),
+  Chile_AcousN  = "Chile_AcousN",
+  Chile_CPUE    = c("Chile_CPUE_early", "Chile_CPUE_late", "Chile_CPUE"),
+  DEPM          = "DEPM",
+  Peru_Acoustic = "Peru_Acoustic",
+  Peru_CPUE     = "Peru_CPUE",
+  Offshore_CPUE = c("Offshore_CPUE_early", "Offshore_CPUE_late", "Offshore_CPUE")
+)
+
+survey_biomass_treat <- c(
+  Chile_AcousCS_early = 5, Chile_AcousCS_late = 5, Chile_AcousCS = 5,
+  Chile_AcousN = 5,
+  Chile_CPUE_early = 2, Chile_CPUE_late = 2, Chile_CPUE = 2,
+  DEPM = 0,
+  Peru_Acoustic = 5,
+  Peru_CPUE = 2,
+  Offshore_CPUE_early = 2, Offshore_CPUE_late = 2, Offshore_CPUE = 2
+)
+
+build_obs_map <- function(idx_names, start_code = 401) {
+  out <- numeric(0)
+  code <- start_code
+  for (grp in survey_obs_groups) {
+    present <- grp[grp %in% idx_names]
+    if (length(present) > 0) {
+      out[present] <- code
+      code <- code + 1
+    }
+  }
+  out
+}
+
+# ============================================================
+# Alternative input set:
+#   - drop Chile_AcousCS, DEPM, Peru_Acoustic entirely
+#   - retain Chile_AcousN only from 2000 onward
+# Apply before q-splitting so downstream objects inherit the change.
+# ============================================================
+
+drop_indices <- c("Chile_AcousCS", "DEPM", "Peru_Acoustic")
+idx_h1 <- subset_indices(idx_h1, setdiff(names(idx_h1), drop_indices))
+idx_h1[["Chile_AcousN"]] <- window(idx_h1[["Chile_AcousN"]], start = 2000)
+
 # ============================================================
 # Split indices with time-varying q (break years from JJM h1_1.14.ctl)
 #   Chile_AcousCS : break 2002
@@ -74,7 +142,9 @@ split_idx <- function(fl, break_yr) {
 
 idx_split <- list()
 for (nm in names(idx_h1)) {
-  if (nm %in% names(q_breaks)) {
+  if (nm %in% names(q_breaks) &&
+      range(idx_h1[[nm]])["minyear"] < q_breaks[[nm]] &&
+      range(idx_h1[[nm]])["maxyear"] >= q_breaks[[nm]]) {
     sp <- split_idx(idx_h1[[nm]], q_breaks[[nm]])
     idx_split[[paste0(nm, "_early")]] <- sp$early
     idx_split[[paste0(nm, "_late")]]  <- sp$late
@@ -115,7 +185,7 @@ stk_h1           <- fix_spwn(stk_h1)
 # --- H1 ---
 ctrl_h1 <- FLSAM.control(stk_h1, idx_h1)
 
-ctrl_h1@plus.group[] <- 1
+ctrl_h1@plus.group[] <- TRUE
 
 ctrl_h1@states["catch N_Chile",] 		        <- c(1:7,rep(8,5))
 ctrl_h1@states["catch SC_Chile_PS",] 	      <- c(1:8,rep(9,4)) 		+ 101
@@ -132,33 +202,13 @@ ctrl_h1@obs.vars["catch SC_Chile_PS",] 		  <- c(rep(1,12)) 		+ 101
 ctrl_h1@obs.vars["catch FarNorth",] 		    <- c(1,1,1,rep(2,9)) 		+ 201
 ctrl_h1@obs.vars["catch Offshore_Trawl",] 	<- c(rep(1,12)) 		+ 301
 
-# Split pairs share the same obs.var index; each gets its own catchability.
-# Index order after splitting (10 surveys):
-#   Chile_AcousCS_early, Chile_AcousCS_late, Chile_AcousN,
-#   Chile_CPUE_early, Chile_CPUE_late, DEPM,
-#   Peru_Acoustic, Peru_CPUE, Offshore_CPUE_early, Offshore_CPUE_late
-ctrl_h1@obs.vars["Chile_AcousCS_early", 1] <- 401
-ctrl_h1@obs.vars["Chile_AcousCS_late",  1] <- 401   # shared with early
-ctrl_h1@obs.vars["Chile_AcousN",        1] <- 402
-ctrl_h1@obs.vars["Chile_CPUE_early",    1] <- 403
-ctrl_h1@obs.vars["Chile_CPUE_late",     1] <- 403   # shared with early
-ctrl_h1@obs.vars["DEPM",                1] <- 404
-ctrl_h1@obs.vars["Peru_Acoustic",       1] <- 405
-ctrl_h1@obs.vars["Peru_CPUE",           1] <- 406
-ctrl_h1@obs.vars["Offshore_CPUE_early", 1] <- 407
-ctrl_h1@obs.vars["Offshore_CPUE_late",  1] <- 407   # shared with early
+obs_map <- build_obs_map(names(idx_h1))
+bio_map <- survey_biomass_treat[names(idx_h1)]
 
-# biomassTreat: 0=SSB, 2=exploitable biomass, 5=total biomass
-ctrl_h1@biomassTreat["Chile_AcousCS_early"] <- 5
-ctrl_h1@biomassTreat["Chile_AcousCS_late"]  <- 5
-ctrl_h1@biomassTreat["Chile_AcousN"]        <- 5
-ctrl_h1@biomassTreat["Chile_CPUE_early"]    <- 2
-ctrl_h1@biomassTreat["Chile_CPUE_late"]     <- 2
-ctrl_h1@biomassTreat["DEPM"]               <- 0
-ctrl_h1@biomassTreat["Peru_Acoustic"]       <- 5
-ctrl_h1@biomassTreat["Peru_CPUE"]          <- 2
-ctrl_h1@biomassTreat["Offshore_CPUE_early"] <- 2
-ctrl_h1@biomassTreat["Offshore_CPUE_late"]  <- 2
+for (nm in names(idx_h1)) {
+  ctrl_h1@obs.vars[nm, 1] <- obs_map[nm]
+  ctrl_h1@biomassTreat[nm] <- bio_map[nm]
+}
 
 ctrl_h1 <- update(ctrl_h1)
 ctrl_h1@residuals <- TRUE
@@ -169,7 +219,7 @@ ctrl_h1@residuals <- TRUE
 # ============================================================
 build_ctrl <- function(stk, idx_sub) {
   ctrl <- FLSAM.control(stk, idx_sub)
-  ctrl@plus.group[] <- 1
+  ctrl@plus.group[] <- TRUE
 
   ctrl@states["catch N_Chile",]          <- c(1:7, rep(8,5))
   ctrl@states["catch SC_Chile_PS",]      <- c(1:8, rep(9,4))  + 101
@@ -186,16 +236,8 @@ build_ctrl <- function(stk, idx_sub) {
   ctrl@obs.vars["catch FarNorth",]       <- c(1,1,1,rep(2,9))  + 201
   ctrl@obs.vars["catch Offshore_Trawl",] <- c(rep(1,12))       + 301
 
-  obs_map <- c(Chile_AcousCS_early=401, Chile_AcousCS_late=401,
-               Chile_AcousN=402,
-               Chile_CPUE_early=403,   Chile_CPUE_late=403,
-               DEPM=404, Peru_Acoustic=405, Peru_CPUE=406,
-               Offshore_CPUE_early=407, Offshore_CPUE_late=407)
-  bio_map <- c(Chile_AcousCS_early=5,  Chile_AcousCS_late=5,
-               Chile_AcousN=5,
-               Chile_CPUE_early=2,     Chile_CPUE_late=2,
-               DEPM=0, Peru_Acoustic=5, Peru_CPUE=2,
-               Offshore_CPUE_early=2,  Offshore_CPUE_late=2)
+  obs_map <- build_obs_map(names(idx_sub))
+  bio_map <- survey_biomass_treat[names(idx_sub)]
 
   for (nm in names(idx_sub)) {
     ctrl@obs.vars[nm, 1]  <- obs_map[nm]
@@ -211,7 +253,7 @@ build_ctrl <- function(stk, idx_sub) {
 # Fit FLSAM models
 # ============================================================
 
-sam_h1   <- FLSAM(stk_h1,             idx_h1, ctrl_h1)
+sam_h1   <- FLSAM(stk_h1,             idx_h1, ctrl_h1, newtonsteps = 0)
 
 # ============================================================
 # Retrospective analysis (manual loop)
@@ -244,12 +286,13 @@ for (peel in seq_len(n_retro)) {
     cat(sprintf("Retro peel %i (->%i)\n", peel, yr_end))
   }
 
-  idx_peel  <- FLIndices(lapply(idx_h1[in_range], window, end = yr_end))
+  keep_peel <- names(idx_h1)[in_range]
+  idx_peel  <- FLIndices(setNames(lapply(keep_peel, function(nm) window(idx_h1[[nm]], end = yr_end)), keep_peel))
   # Rebuild ctrl from scratch for this subset — avoids drop.from.control() issues
   ctrl_peel <- build_ctrl(stk_peel, idx_peel)
 
   retro_h1[[as.character(yr_end)]] <- tryCatch(
-    FLSAM(stk_peel, idx_peel, ctrl_peel),
+    FLSAM(stk_peel, idx_peel, ctrl_peel, newtonsteps = 0),
     error = function(e) { message("  FAILED: ", e$message); NULL }
   )
 }
@@ -273,14 +316,15 @@ loo_groups <- list(
   Peru_CPUE     = "Peru_CPUE",
   Offshore_CPUE = c("Offshore_CPUE_early", "Offshore_CPUE_late")
 )
+loo_groups <- loo_groups[vapply(loo_groups, function(x) any(x %in% names(idx_h1)), logical(1))]
 
 loo_fits <- lapply(names(loo_groups), function(grp) {
   drop     <- loo_groups[[grp]]
-  idx_loo  <- FLIndices(idx_h1[!names(idx_h1) %in% drop])
+  idx_loo  <- subset_indices(idx_h1, names(idx_h1)[!names(idx_h1) %in% drop])
   ctrl_loo <- build_ctrl(stk_h1, idx_loo)
   cat(sprintf("LOO: dropping %s ...\n", grp))
   fit <- tryCatch(
-    FLSAM(stk_h1, idx_loo, ctrl_loo),
+    FLSAM(stk_h1, idx_loo, ctrl_loo, newtonsteps = 0),
     error = function(e) { message("  FAILED: ", e$message); NULL }
   )
   fit
@@ -308,11 +352,7 @@ dir.create("diagnostics", showWarnings = FALSE)
 
 catch_fleets  <- c("catch N_Chile", "catch SC_Chile_PS",
                    "catch FarNorth", "catch Offshore_Trawl")
-survey_fleets <- c("Chile_AcousCS_early", "Chile_AcousCS_late",
-                   "Chile_AcousN",
-                   "Chile_CPUE_early", "Chile_CPUE_late",
-                   "DEPM", "Peru_Acoustic", "Peru_CPUE",
-                   "Offshore_CPUE_early", "Offshore_CPUE_late")
+survey_fleets <- names(idx_h1)
 
 # Helper: strip _early/_late suffixes for display — split pairs merge into one panel
 base_fleet          <- function(x) sub("_(early|late)$", "", x)

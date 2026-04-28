@@ -18,13 +18,33 @@ library(FLSAM)
 library(parallel)
 library(R.utils)   # withTimeout()
 
+# Avoid expensive one-step-ahead residual calculations when FLSAM
+# back-fills residuals during SAM2FLR conversion. This keeps residual
+# columns available using cheap log-observed-minus-log-predicted values.
+skip_flsam_osa_residuals <- function() {
+  sam2flr <- get("SAM2FLR", envir = asNamespace("FLSAM"))
+
+  replace_osa_call <- function(expr) {
+    if (!is.call(expr)) return(expr)
+    if (identical(expr[[1]], as.name("oneStepPredict"))) {
+      return(quote(data.frame(residual = fit$data$logobs - fit$rep$predObs)))
+    }
+    as.call(lapply(as.list(expr), replace_osa_call))
+  }
+
+  body(sam2flr) <- replace_osa_call(body(sam2flr))
+  assignInNamespace("SAM2FLR", sam2flr, ns = "FLSAM")
+}
+
+skip_flsam_osa_residuals()
+
 # ---- load main model outputs --------------------------------
 load("output_h1.RData")   # stk_h1, idx_h1, ctrl_h1, sam_h1
 
 # ---- build_ctrl (must be identical to 01_run_assessment.R) --
 build_ctrl <- function(stk, idx_sub) {
   ctrl <- FLSAM.control(stk, idx_sub)
-  ctrl@plus.group[] <- 1
+  ctrl@plus.group[] <- TRUE
 
   ctrl@states["catch N_Chile",]          <- c(1:7, rep(8,5))
   ctrl@states["catch SC_Chile_PS",]      <- c(1:8, rep(9,4))  + 101
@@ -48,9 +68,9 @@ build_ctrl <- function(stk, idx_sub) {
                Offshore_CPUE_early=407, Offshore_CPUE_late=407)
   bio_map <- c(Chile_AcousCS_early=5,  Chile_AcousCS_late=5,
                Chile_AcousN=5,
-               Chile_CPUE_early=5,     Chile_CPUE_late=5,
-               DEPM=0, Peru_Acoustic=5, Peru_CPUE=5,
-               Offshore_CPUE_early=5,  Offshore_CPUE_late=5)
+               Chile_CPUE_early=2,     Chile_CPUE_late=2,
+               DEPM=0, Peru_Acoustic=5, Peru_CPUE=2,
+               Offshore_CPUE_early=2,  Offshore_CPUE_late=2)
 
   for (nm in names(idx_sub)) {
     ctrl@obs.vars[nm, 1]                                    <- obs_map[nm]
@@ -67,7 +87,7 @@ build_ctrl <- function(stk, idx_sub) {
 # per fleet across all ages.  Used as the default for retro + LOO.
 build_ctrl_alt <- function(stk, idx_sub) {
   ctrl <- FLSAM.control(stk, idx_sub)
-  ctrl@plus.group[] <- 1
+  ctrl@plus.group[] <- TRUE
 
   ctrl@states["catch N_Chile",]          <- c(1:7, rep(8,5))
   ctrl@states["catch SC_Chile_PS",]      <- c(1:8, rep(9,4))  + 101
@@ -83,9 +103,9 @@ build_ctrl_alt <- function(stk, idx_sub) {
                Offshore_CPUE_early=407, Offshore_CPUE_late=407)
   bio_map <- c(Chile_AcousCS_early=5,  Chile_AcousCS_late=5,
                Chile_AcousN=5,
-               Chile_CPUE_early=5,     Chile_CPUE_late=5,
-               DEPM=0, Peru_Acoustic=5, Peru_CPUE=5,
-               Offshore_CPUE_early=5,  Offshore_CPUE_late=5)
+               Chile_CPUE_early=2,     Chile_CPUE_late=2,
+               DEPM=0, Peru_Acoustic=5, Peru_CPUE=2,
+               Offshore_CPUE_early=2,  Offshore_CPUE_late=2)
 
   for (nm in names(idx_sub)) {
     ctrl@obs.vars[nm, 1]                                <- obs_map[nm]
@@ -147,7 +167,7 @@ t_retro <- system.time({
     ctrl_peel@residuals <- TRUE
 
     tryCatch(
-      withTimeout(FLSAM(stk_peel, idx_peel, ctrl_peel),
+      withTimeout(FLSAM(stk_peel, idx_peel, ctrl_peel, newtonsteps = 0),
                   timeout = retro_timeout_sec, onTimeout = "error"),
       error = function(e) { message("FAILED peel ", peel, ": ", e$message); NULL }
     )
@@ -172,7 +192,7 @@ t_loo <- system.time({
     ctrl_loo@residuals <- TRUE
     message(sprintf("LOO: dropping %s", grp))
     tryCatch(
-      withTimeout(FLSAM(stk_h1, idx_loo, ctrl_loo),
+      withTimeout(FLSAM(stk_h1, idx_loo, ctrl_loo, newtonsteps = 0),
                   timeout = loo_timeout_sec, onTimeout = "error"),
       error = function(e) { message("LOO FAILED ", grp, ": ", e$message); NULL }
     )

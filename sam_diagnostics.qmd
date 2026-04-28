@@ -350,25 +350,24 @@ to include in the OM's observation model and what variance to assign them.
 ## Input data
 
 The SAM fit uses the H1 single-stock FLStock (`h1_1.14`) prepared for the 2025
-assessment cycle. There are four catch fleets and seven biomass-only survey indices
-(@tbl-surveys).
+assessment cycle. This alternative configuration keeps the four catch fleets but
+modifies the survey input set before fitting: `Chile_AcousCS`, `DEPM`, and
+`Peru_Acoustic` are excluded entirely, and `Chile_AcousN` is retained only from
+2000 onward. The resulting SAM input uses four base survey indices (@tbl-surveys).
 
 | Index | Type | SAM treatment |
 |---|---|---|
-| Chile_AcousCS | Acoustic survey (central-south Chile) | Total biomass index |
 | Chile_AcousN | Acoustic survey (north Chile) | Total biomass index |
-| Chile_CPUE | Chilean CPUE | Total biomass index |
-| DEPM | Daily egg production method (spawning biomass) | SSB index |
-| Peru_Acoustic | Acoustic survey (Peru) | Total biomass index |
-| Peru_CPUE | Peruvian CPUE | Total biomass index |
-| Offshore_CPUE | Offshore pelagic trawl CPUE | Total biomass index |
+| Chile_CPUE | Chilean CPUE | CPUE-style biomass index |
+| Peru_CPUE | Peruvian CPUE | CPUE-style biomass index |
+| Offshore_CPUE | Offshore pelagic trawl CPUE | CPUE-style biomass index |
 
 : Survey indices used in the SAM fit {#tbl-surveys}
 
-All indices are treated as biomass indices (age = "all") using `FLIndex` objects with
-`type = "biomass"`. Acoustic surveys and CPUE indices (Chile, Peru, Offshore) are all
-fitted as total biomass indices (`biomassTreat = 5`); DEPM is fitted as an SSB index
-as it directly estimates egg production from spawning adults.
+All retained indices are treated as biomass indices (age = "all") using `FLIndex`
+objects with `type = "biomass"`. The retained acoustic index (`Chile_AcousN`) is
+fitted as a total biomass index (`biomassTreat = 5`), while the retained CPUE
+indices (`Chile_CPUE`, `Peru_CPUE`, `Offshore_CPUE`) use `biomassTreat = 2`.
 
 ## SAM control configuration
 
@@ -376,9 +375,8 @@ Four catch fleets share age-coupled N states (linked cohorts) while F states are
 independently for each fleet. Within each catch fleet, selectivity-at-age is controlled by
 shared N-state groups (e.g. ages 1–7 linked for N_Chile, ages 1–8 for SC_Chile_PS).
 F-variance and observation-variance parameters for the catch fleets use a single shared
-parameter per fleet. Surveys each receive an
-independent observation-variance parameter and are linked to total
-biomass except DEPM which uses SSB.
+parameter per fleet. Surveys each receive an independent observation-variance
+parameter and are linked to total biomass.
 
 # Standard Diagnostics {#sec-standard}
 
@@ -623,10 +621,10 @@ show_diag("h1_retro_residual_topchange.png")
 
 # Leave-one-out Analysis {#sec-loo}
 
-Leave-one-out (LOO) analysis refits the model seven times, each time omitting one
-survey group entirely. For the three surveys with JJM q-break years (Chile_AcousCS,
-Chile_CPUE, Offshore_CPUE), both the early and late sub-series are dropped together
-so that each LOO run represents a genuine removal of that data source.
+Leave-one-out (LOO) analysis refits the model for each retained survey group, each
+time omitting one survey group entirely. For retained surveys that are represented
+as split q-periods in SAM, the early and late sub-series are dropped together so
+that each LOO run represents a genuine removal of that data source.
 
 The resulting SSB, Fbar, and recruitment trajectories are overlaid on the full model
 estimate. A large shift when a survey is dropped indicates that the model is strongly
@@ -672,13 +670,13 @@ show_diag("h1_q_rolling_residuals.png")
 
 ## Catchability shift at break years {#sec-qshift}
 
-The JJM `h1_1.14` control file assigns discrete q-break years to three indices
-(Chile_AcousCS: 2002, Chile_CPUE: 2000, Offshore_CPUE: 2021). To honour these
-structural breaks, each of these indices is split into an early and a late
-sub-series in SAM, with the two sub-series sharing the same observation variance
-parameter but receiving independent catchability estimates. The figure below shows
-the estimated log(q) for the early and late periods; a large shift indicates that
-the survey efficiency or stock availability changed substantially at the break year.
+The JJM `h1_1.14` control file assigns discrete q-break years to several indices. In
+this alternative input set, a q-break is only implemented when both sides of the
+break retain data after filtering. That means `Offshore_CPUE` remains split at 2021,
+whereas `Chile_CPUE` is retained as a single series because the available data begin
+after its nominal 2000 break year. The figure below shows the estimated log(q) for
+the split periods that remain in the fitted SAM object; a large shift indicates that
+survey efficiency or stock availability changed substantially at the break year.
 
 ```{r fig-qshift}
 #| fig-cap: "Estimated log-catchability for early (blue) and late (red) sub-series of the three indices with JJM q-break years. Lines connect the two periods within each index."
@@ -690,7 +688,8 @@ show_diag("h1_catchability_change.png")
 The quantity $\log(I_t) - \log(\hat{B}_t)$ is proportional to $\log(q_t)$. Centring
 this series by its mean isolates the relative change in $q$ over time. A significant
 linear trend (shown in grey) indicates that the constant-$q$ assumption is violated.
-Only the Chilean Acoustic CS, the DEPM and the Peruvian CPUE show no significant trend. 
+Interpretation should focus only on the retained indices in this alternative run
+(`Chile_AcousN`, `Chile_CPUE`, `Peru_CPUE`, and `Offshore_CPUE`).
 
 ```{r fig-qtrend}
 #| fig-cap: "Implied log-catchability relative to fleet mean. Slope ≠ 0 indicates time-varying q. OLS trend shown in black."

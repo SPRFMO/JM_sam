@@ -37,13 +37,24 @@ sr <- merge(
 sr <- sr[complete.cases(sr) & sr$R > 0 & sr$SSB > 0, ]
 sr <- sr[order(sr$year), ]
 
+if (nrow(sr) < 6) {
+  stop("Insufficient finite stock-recruit pairs for productivity analysis")
+}
+
 # Observation weight = 1 / Var(log R), approximated from 95% CI
 sr$logR_se <- pmax((sr$R_hi - sr$R_lo) / (4 * sr$R), 0.01)
 sr$wt      <- 1 / sr$logR_se^2
-sr$wt      <- sr$wt / max(sr$wt)   # scale to [0,1]
+wt_max <- max(sr$wt, na.rm = TRUE)
+if (!is.finite(wt_max) || wt_max <= 0) {
+  stop("Non-finite productivity weights")
+}
+sr$wt      <- sr$wt / wt_max   # scale to [0,1]
 
 B0_ref <- max(sr$SSB)
 n_sr   <- nrow(sr)
+if (!is.finite(B0_ref) || B0_ref <= 0) {
+  stop("Non-finite reference SSB for productivity analysis")
+}
 
 # ------------------------------------------------------------------
 # Beverton-Holt NLS fit (weighted)
@@ -263,23 +274,35 @@ sr$prod        <- sr$R / sr$SSB
 sr$log_prod_se <- sqrt(sr$logR_se^2 + sr$logSSB_se^2)
 sr$prod_lo     <- sr$prod * exp(-1.96 * sr$log_prod_se)
 sr$prod_hi     <- sr$prod * exp( 1.96 * sr$log_prod_se)
+sr <- sr[is.finite(sr$prod) & is.finite(sr$prod_lo) & is.finite(sr$prod_hi), ]
+if (nrow(sr) == 0) {
+  stop("No finite productivity time-series values available")
+}
+
+prod_smooth <- sr[is.finite(sr$year) & is.finite(sr$prod), c("year", "prod")]
+use_loess <- nrow(prod_smooth) >= 4 && length(unique(prod_smooth$year)) >= 4
+
+prod_time_plot <- ggplot(sr, aes(x = year, y = prod)) +
+  geom_errorbar(aes(ymin = prod_lo, ymax = prod_hi),
+                colour = "grey65", linewidth = 0.4, width = 0) +
+  geom_point(aes(colour = prod), size = 2.5) +
+  scale_colour_viridis_c(option = "plasma", name = "R/SSB") +
+  scale_y_continuous(limits = c(0, NA)) +
+  labs(title = "Productivity over time (R / SSB)",
+       subtitle = "Points = annual estimate with 95% CI; line = LOESS smoother when finite",
+       x = "Year", y = "Recruitment per Spawner") +
+  theme_bw() +
+  theme(legend.position = "right")
+
+if (use_loess) {
+  prod_time_plot <- prod_time_plot +
+    geom_smooth(data = prod_smooth, aes(x = year, y = prod),
+                method = "loess", span = 0.4, se = FALSE,
+                colour = "black", linewidth = 1.1, inherit.aes = FALSE)
+}
 
 png("diagnostics/h1_productivity_time.png", width = 1400, height = 800, res = 150)
-print(
-  ggplot(sr, aes(x = year, y = prod)) +
-    geom_errorbar(aes(ymin = prod_lo, ymax = prod_hi),
-                  colour = "grey65", linewidth = 0.4, width = 0) +
-    geom_point(aes(colour = prod), size = 2.5) +
-    geom_smooth(method = "loess", span = 0.4, se = FALSE,
-                colour = "black", linewidth = 1.1) +
-    scale_colour_viridis_c(option = "plasma", name = "R/SSB") +
-    scale_y_continuous(limits = c(0, NA)) +
-    labs(title = "Productivity over time (R / SSB)",
-         subtitle = "Points = annual estimate with 95% CI; line = LOESS smoother",
-         x = "Year", y = "Recruitment per Spawner") +
-    theme_bw() +
-    theme(legend.position = "right")
-)
+print(prod_time_plot)
 dev.off()
 
 # ------------------------------------------------------------------
