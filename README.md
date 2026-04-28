@@ -29,6 +29,11 @@ and versioned independently.
 
 ## Report
 
-The rendered diagnostics report is available in `sam_diagnostics.html`. To
-refresh it, run the assessment and diagnostics scripts, then render
-`sam_diagnostics.qmd` with Quarto.
+The rendered diagnostics report is available through GitHub Pages:
+
+<https://sprfmo.github.io/JM_sam/>
+
+The source report file is `sam_diagnostics.qmd`, and the rendered HTML is
+available in both `sam_diagnostics.html` and `index.html`. To refresh the site,
+run the assessment and diagnostics scripts, render `sam_diagnostics.qmd` with
+Quarto, and copy the rendered report to `index.html`.
