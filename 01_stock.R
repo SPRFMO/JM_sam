@@ -1874,5 +1874,11 @@ dev.off()
 
 cat("Selectivity blocking output written to diagnostics/\n")
 
-Sys.setenv(QUARTO_PATH = "C:/Program Files/Quarto/bin/quarto.exe")  # adjust to whichever path was found
-quarto::quarto_render("sam_diagnostics.qmd")
+if (requireNamespace("quarto", quietly = TRUE)) {
+  quarto::quarto_render("sam_diagnostics.qmd")
+} else {
+  status <- system2("quarto", c("render", "sam_diagnostics.qmd"))
+  if (!identical(status, 0L)) {
+    stop("quarto render failed with status ", status)
+  }
+}

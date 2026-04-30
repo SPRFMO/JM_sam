@@ -17,105 +17,12 @@ library(FLCore)
 library(FLSAM)
 library(parallel)
 library(R.utils)   # withTimeout()
-
-# Avoid expensive one-step-ahead residual calculations when FLSAM
-# back-fills residuals during SAM2FLR conversion. This keeps residual
-# columns available using cheap log-observed-minus-log-predicted values.
-skip_flsam_osa_residuals <- function() {
-  sam2flr <- get("SAM2FLR", envir = asNamespace("FLSAM"))
-
-  replace_osa_call <- function(expr) {
-    if (!is.call(expr)) return(expr)
-    if (identical(expr[[1]], as.name("oneStepPredict"))) {
-      return(quote(data.frame(residual = fit$data$logobs - fit$rep$predObs)))
-    }
-    as.call(lapply(as.list(expr), replace_osa_call))
-  }
-
-  body(sam2flr) <- replace_osa_call(body(sam2flr))
-  assignInNamespace("SAM2FLR", sam2flr, ns = "FLSAM")
-}
+source("R/sam_helpers.R")
 
 skip_flsam_osa_residuals()
 
 # ---- load main model outputs --------------------------------
 load("output_h1.RData")   # stk_h1, idx_h1, ctrl_h1, sam_h1
-
-# ---- build_ctrl (must be identical to 01_run_assessment.R) --
-build_ctrl <- function(stk, idx_sub) {
-  ctrl <- FLSAM.control(stk, idx_sub)
-  ctrl@plus.group[] <- TRUE
-
-  ctrl@states["catch N_Chile",]          <- c(1:7, rep(8,5))
-  ctrl@states["catch SC_Chile_PS",]      <- c(1:8, rep(9,4))  + 101
-  ctrl@states["catch FarNorth",]         <- c(1:5, rep(6,7))  + 201
-  ctrl@states["catch Offshore_Trawl",]   <- c(1:7, rep(8,5))  + 301
-
-  ctrl@f.vars["catch N_Chile",]          <- c(0,0,0,1,1,rep(2,7))
-  ctrl@f.vars["catch SC_Chile_PS",]      <- c(0,0,0,rep(2,9))    + 101
-  ctrl@f.vars["catch FarNorth",]         <- c(0,0,1,2,rep(3,8))  + 201
-  ctrl@f.vars["catch Offshore_Trawl",]   <- c(rep(0,5),rep(1,7)) + 301
-
-  ctrl@obs.vars["catch N_Chile",]        <- c(1, rep(2,11))
-  ctrl@obs.vars["catch SC_Chile_PS",]    <- c(rep(1,12))       + 101
-  ctrl@obs.vars["catch FarNorth",]       <- c(1,1,1,rep(2,9))  + 201
-  ctrl@obs.vars["catch Offshore_Trawl",] <- c(rep(1,12))       + 301
-
-  obs_map <- c(Chile_AcousCS_early=401, Chile_AcousCS_late=401,
-               Chile_AcousN=402,
-               Chile_CPUE_early=403,   Chile_CPUE_late=403,
-               DEPM=404, Peru_Acoustic=405, Peru_CPUE=406,
-               Offshore_CPUE_early=407, Offshore_CPUE_late=407)
-  bio_map <- c(Chile_AcousCS_early=5,  Chile_AcousCS_late=5,
-               Chile_AcousN=5,
-               Chile_CPUE_early=2,     Chile_CPUE_late=2,
-               DEPM=0, Peru_Acoustic=5, Peru_CPUE=2,
-               Offshore_CPUE_early=2,  Offshore_CPUE_late=2)
-
-  for (nm in names(idx_sub)) {
-    ctrl@obs.vars[nm, 1]                                    <- obs_map[nm]
-    ctrl@biomassTreat[which(names(ctrl@fleets) == nm)] <- bio_map[nm]
-  }
-
-  ctrl <- update(ctrl)
-  ctrl@residuals <- FALSE
-  ctrl
-}
-
-# ---- build_ctrl_alt (must be identical to 01_run_assessment.R) --
-# FLSAM defaults for catch f.vars / obs.vars: one shared parameter
-# per fleet across all ages.  Used as the default for retro + LOO.
-build_ctrl_alt <- function(stk, idx_sub) {
-  ctrl <- FLSAM.control(stk, idx_sub)
-  ctrl@plus.group[] <- TRUE
-
-  ctrl@states["catch N_Chile",]          <- c(1:7, rep(8,5))
-  ctrl@states["catch SC_Chile_PS",]      <- c(1:8, rep(9,4))  + 101
-  ctrl@states["catch FarNorth",]         <- c(1:5, rep(6,7))  + 201
-  ctrl@states["catch Offshore_Trawl",]   <- c(1:7, rep(8,5))  + 301
-
-  # f.vars and obs.vars for catch fleets: FLSAM defaults retained
-
-  obs_map <- c(Chile_AcousCS_early=401, Chile_AcousCS_late=401,
-               Chile_AcousN=402,
-               Chile_CPUE_early=403,   Chile_CPUE_late=403,
-               DEPM=404, Peru_Acoustic=405, Peru_CPUE=406,
-               Offshore_CPUE_early=407, Offshore_CPUE_late=407)
-  bio_map <- c(Chile_AcousCS_early=5,  Chile_AcousCS_late=5,
-               Chile_AcousN=5,
-               Chile_CPUE_early=2,     Chile_CPUE_late=2,
-               DEPM=0, Peru_Acoustic=5, Peru_CPUE=2,
-               Offshore_CPUE_early=2,  Offshore_CPUE_late=2)
-
-  for (nm in names(idx_sub)) {
-    ctrl@obs.vars[nm, 1]                                <- obs_map[nm]
-    ctrl@biomassTreat[which(names(ctrl@fleets) == nm)] <- bio_map[nm]
-  }
-
-  ctrl <- update(ctrl)
-  ctrl@residuals <- FALSE
-  ctrl
-}
 
 # ---- LOO groups (must match 01_run_assessment.R) ------------
 loo_groups <- list(

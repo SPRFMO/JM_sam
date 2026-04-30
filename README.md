@@ -28,6 +28,41 @@ after migration.
 - `sam_diagnostics.qmd` is the Quarto diagnostics report.
 - `diagnostics/` contains generated diagnostic figures and tables.
 
+## Reproducible setup
+
+This repository does not currently ship an `renv.lock`, so install the runtime
+dependencies explicitly before running the workflow. The analysis uses R,
+Quarto, and the FLR/SAM package stack:
+
+```r
+install.packages(c(
+  "ggplot2",
+  "patchwork",
+  "RColorBrewer",
+  "quarto",
+  "R.utils"
+))
+
+install.packages("remotes")
+remotes::install_github(c(
+  "flr/FLCore",
+  "flr/FLSAM"
+))
+```
+
+Quarto must also be available on `PATH` for command-line rendering. The active
+render path is:
+
+```sh
+Rscript render_from_output.R
+```
+
+To refit the assessment before rendering, run:
+
+```sh
+Rscript 01_run_assessment.R
+```
+
 ## Report
 
 The rendered diagnostics report is available through GitHub Pages:

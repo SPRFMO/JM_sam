@@ -13,25 +13,10 @@
 # If run standalone (not via 01_run_assessment.R), parse jjm_ssb here.
 # When sourced from 01_run_assessment.R the object already exists.
 if (!exists("jjm_ssb")) {
-  .parse_jjm_ssb <- function(rep_file, max_year) {
-    if (!file.exists(rep_file)) return(NULL)
-    lines     <- readLines(rep_file, warn = FALSE)
-    sec_idx   <- grep("^\\$[A-Za-z_]+$", lines)
-    sec_names <- sub("^\\$", "", lines[sec_idx])
-    i_ssb <- sec_idx[sec_names == "SSB"]
-    if (length(i_ssb) == 0) return(NULL)
-    pos  <- which(sec_idx == i_ssb)
-    end  <- if (pos < length(sec_idx)) sec_idx[pos + 1] - 1 else length(lines)
-    dlines <- trimws(lines[(i_ssb + 1):end])
-    dlines <- dlines[nchar(dlines) > 0]
-    mat    <- do.call(rbind, lapply(dlines,
-                function(l) as.numeric(strsplit(l, "\\s+")[[1]])))
-    if (ncol(mat) < 5) return(NULL)
-    mat <- mat[mat[, 1] <= max_year, , drop = FALSE]
-    data.frame(year = as.integer(mat[, 1]), value = mat[, 2],
-               lbnd = mat[, 4], ubnd = mat[, 5])
+  if (!exists("parse_jjm_ssb")) {
+    source("R/sam_helpers.R")
   }
-  jjm_ssb <- .parse_jjm_ssb(
+  jjm_ssb <- parse_jjm_ssb(
     rep_file = "../assessment/results/h1_1.14_1_R.rep",
     max_year = as.integer(range(stk_h1)["maxyear"])
   )
