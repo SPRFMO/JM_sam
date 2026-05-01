@@ -47,13 +47,13 @@ stk_h1 <- fix_spwn(stk_h1)
 # FLSAM control
 # ============================================================
 
-ctrl_h1 <- build_ctrl(stk_h1, idx_h1, residuals = TRUE)
+ctrl_h1 <- build_ctrl_alt(stk_h1, idx_h1, residuals = TRUE)
 
 # ============================================================
 # Fit FLSAM model
 # ============================================================
 
-sam_h1 <- FLSAM(stk_h1, idx_h1, ctrl_h1, newtonsteps = 0)
+sam_h1 <- FLSAM(stk_h1, idx_h1, ctrl_h1)
 
 # ============================================================
 # Retrospective analysis (sequential loop)
