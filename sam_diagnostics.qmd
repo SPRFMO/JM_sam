@@ -144,6 +144,30 @@ JJM framework alone:
   Abundance: Review and Standardisation*) and the choice of MP input data streams
   for BM-04.
 
+### Current implementation note
+
+The active `JM_sam` workflow was updated in early May 2026 to restore the full
+exploratory SAM run script as `01_run_assessment.R` and move the more restrictive
+drop-data configuration to `01_run_assessment_dropData.R`. The active script keeps
+the control-file construction in the run script so model configurations can be
+changed and inspected directly during development.
+
+The key technical change is that survey inputs are no longer forced into a
+biomass-only representation. The run code now detects indices with age-composition
+information (`catch.n`) and converts those to number-at-age `FLIndex` objects, while
+indices without age composition are still converted to biomass `FLIndex` objects.
+This matters for the Chilean acoustic series and DEPM-style inputs, where retaining
+age structure provides a better SAM representation than treating every survey as an
+integrated biomass signal.
+
+The helper workflow also distinguishes two control builders. `build_ctrl()` applies
+explicit catch-fleet F-variance and observation-variance groupings, whereas
+`build_ctrl_alt()` keeps the FLSAM default catch variance structure while retaining
+the same state groupings and survey treatment. The retrospective and leave-one-out
+workflow in `01b_retro_loo_parallel.R` uses `build_ctrl_alt()` because the additional
+catch F-variance parameterization was not performing well during configuration
+testing.
+
 ## The State-Space Assessment Model (SAM)
 
 ### Overview and ICES context
@@ -208,8 +232,9 @@ $$
 \log\hat{C}_{a,t,f} \sim \mathcal{N}\!\bigl(\log C_{a,t,f}^{\text{pred}},\,\sigma_{C,f}^2\bigr)
 $$
 
-Survey biomass indices (as used here, since the CJM surveys are treated as integrated
-biomass signals) are:
+Survey observations may enter either as biomass/CPUE indices or as number-at-age
+indices, depending on the information available in the FLR input object. Biomass and
+CPUE-style indices are linked to exploitable biomass:
 
 $$
 \log\hat{I}_{s,t} \sim \mathcal{N}\!\bigl(\log(q_s\,\hat{B}_{s,t}),\,\sigma_{I,s}^2\bigr)
@@ -220,6 +245,11 @@ where $\hat{B}_{s,t}$ is the model-predicted exploitable biomass for survey $s$.
 This is a fundamental difference from JJM, where data weights are set by the analyst.
 SAM's internally estimated variances provide a direct, objective measure of the
 effective weight each data source receives — large variance = low effective weight.
+
+For number-at-age survey observations, SAM fits age-specific log observations using
+age-specific observation-variance and catchability groupings. In the current code this
+is used for acoustic and DEPM-style series with available age composition, while
+CPUE-style series remain biomass indices.
 
 ### Uncertainty propagation
 
@@ -357,33 +387,45 @@ to include in the OM's observation model and what variance to assign them.
 ## Input data
 
 The SAM fit uses the H1 single-stock FLStock (`h1_1.14`) prepared for the 2025
-assessment cycle. This alternative configuration keeps the four catch fleets but
-modifies the survey input set before fitting: `Chile_AcousCS`, `DEPM`, and
-`Peru_Acoustic` are excluded entirely, and `Chile_AcousN` is retained only from
-2000 onward. The resulting SAM input uses four base survey indices (@tbl-surveys).
+assessment cycle. The active `01_run_assessment.R` workflow retains the full
+exploratory survey configuration and converts each input according to its data type:
+indices with non-empty `catch.n` are treated as number-at-age indices, and indices
+without age composition are treated as biomass indices. Time-varying catchability
+breaks are then applied to selected survey series, producing early/late sub-series
+where required.
 
 | Index | Type | SAM treatment |
 |---|---|---|
-| Chile_AcousN | Acoustic survey (north Chile) | Total biomass index |
-| Chile_CPUE | Chilean CPUE | CPUE-style biomass index |
-| Peru_CPUE | Peruvian CPUE | CPUE-style biomass index |
-| Offshore_CPUE | Offshore pelagic trawl CPUE | CPUE-style biomass index |
+| Chile_AcousCS | Acoustic survey (central-south Chile) | Number-at-age index, split at the q-break |
+| Chile_AcousN | Acoustic survey (north Chile) | Number-at-age index |
+| Chile_CPUE | Chilean CPUE | Biomass/CPUE index, split at the q-break |
+| DEPM | Daily egg production method index | Number-at-age index where age composition is available |
+| Peru_Acoustic | Peruvian acoustic survey | Biomass index |
+| Peru_CPUE | Peruvian CPUE | Biomass/CPUE index |
+| Offshore_CPUE | Offshore pelagic trawl CPUE | Biomass/CPUE index, split at the q-break |
 
 : Survey indices used in the SAM fit {#tbl-surveys}
 
-All retained indices are treated as biomass indices (age = "all") using `FLIndex`
-objects with `type = "biomass"`. The retained acoustic index (`Chile_AcousN`) is
-fitted as a total biomass index (`biomassTreat = 5`), while the retained CPUE
-indices (`Chile_CPUE`, `Peru_CPUE`, `Offshore_CPUE`) use `biomassTreat = 2`.
+The alternate script `01_run_assessment_dropData.R` preserves the more restrictive
+sensitivity run that drops `Chile_AcousCS`, `DEPM`, and `Peru_Acoustic`, and retains
+`Chile_AcousN` only from 2000 onward. That script is useful for testing reduced-data
+configurations, but it is no longer the main active run script.
 
 ## SAM control configuration
 
-Four catch fleets share age-coupled N states (linked cohorts) while F states are estimated
-independently for each fleet. Within each catch fleet, selectivity-at-age is controlled by
-shared N-state groups (e.g. ages 1–7 linked for N_Chile, ages 1–8 for SC_Chile_PS).
-F-variance and observation-variance parameters for the catch fleets use a single shared
-parameter per fleet. Surveys each receive an independent observation-variance
-parameter and are linked to total biomass.
+Four catch fleets share age-coupled N states (linked cohorts) while F states are
+estimated independently for each fleet. Within each catch fleet, selectivity-at-age is
+controlled by shared N-state groups (e.g. ages 1-7 linked for N_Chile, ages 1-8 for
+SC_Chile_PS). The active exploratory script keeps the control-file settings inline so
+the state, catchability, F-variance, and observation-variance groupings can be edited
+directly while comparing configurations.
+
+Two control-building helpers are retained for reproducible follow-up runs:
+`build_ctrl()` applies explicit catch F-variance groupings, while `build_ctrl_alt()`
+uses the FLSAM default catch variance structure and only reapplies the shared state
+and survey mappings. The parallel retrospective and leave-one-out script uses
+`build_ctrl_alt()` for its repeated fits because the richer catch F-variance
+parameterization was unstable in recent testing.
 
 # Standard Diagnostics {#sec-standard}
 

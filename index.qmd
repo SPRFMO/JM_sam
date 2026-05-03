@@ -20,6 +20,14 @@ This page collects rendered SAM diagnostics now owned by the `JM_sam`
 repository. The active report should be updated here; the retained
 `JM_SCW_prep/sam` render is a frozen migration artifact from an earlier commit.
 
+The active SAM workflow was updated in May 2026 to restore the full exploratory
+`01_run_assessment.R` script, preserve the reduced-data configuration as
+`01_run_assessment_dropData.R`, and treat survey inputs according to their data type:
+number-at-age indices remain age structured, while CPUE and other integrated signals
+are fitted as biomass indices. The retrospective and leave-one-out helper workflow
+uses the `build_ctrl_alt()` control configuration to avoid the unstable extra
+catch-F variance parameterization.
+
 ## Results
 
 | Result | Source | Link |
@@ -33,3 +41,5 @@ repository. The active report should be updated here; the retained
 - The `JM_SCW_prep/sam` report is copied into `scw_prep_f5a21f0/` only to retain
   the earlier rendered result for provenance.
 - New SAM changes should be made in `JM_sam`, not in `JM_SCW_prep/sam`.
+- The active report describes the current number-at-age index handling and
+  `build_ctrl_alt()` workflow.

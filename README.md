@@ -20,7 +20,9 @@ after migration.
 
 ## Contents
 
-- `01_run_assessment.R` runs the H1 SAM assessment workflow.
+- `01_run_assessment.R` runs the active exploratory H1 SAM assessment workflow.
+- `01_run_assessment_dropData.R` preserves the reduced-data configuration that drops
+  selected survey series for sensitivity testing.
 - `01_stock.R` prepares stock and index inputs.
 - `01b_retro_loo_parallel.R` runs retrospective and leave-one-out analyses.
 - `02_standard_diagnostics.R` through `06_selectivity_blocks.R` generate the
@@ -70,6 +72,8 @@ The rendered diagnostics report is available through GitHub Pages:
 <https://sprfmo.github.io/JM_sam/>
 
 The source report file is `sam_diagnostics.qmd`, and the rendered HTML is
-available as `sam_diagnostics.html`. The site landing page is generated from
-`index.qmd` and links to the active diagnostics report plus a frozen
+available as `sam_diagnostics.html`. The report describes the current model-code
+setup, including number-at-age survey handling and the `build_ctrl_alt()` workflow
+used for retrospective and leave-one-out fits. The site landing page is generated
+from `index.qmd` and links to the active diagnostics report plus a frozen
 `JM_SCW_prep/sam` render from commit `f5a21f0` for migration provenance.

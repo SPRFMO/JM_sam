@@ -2273,6 +2273,7 @@ border-bottom: 4px solid #1b4576;
 </div>
 <div class="paper-title">Jack Mackerel SAM Results</div>
 <p>This page collects rendered SAM diagnostics now owned by the <code>JM_sam</code> repository. The active report should be updated here; the retained <code>JM_SCW_prep/sam</code> render is a frozen migration artifact from an earlier commit.</p>
+<p>The active SAM workflow was updated in May 2026 to restore the full exploratory <code>01_run_assessment.R</code> script, preserve the reduced-data configuration as <code>01_run_assessment_dropData.R</code>, and treat survey inputs according to their data type: number-at-age indices remain age structured, while CPUE and other integrated signals are fitted as biomass indices. The retrospective and leave-one-out helper workflow uses the <code>build_ctrl_alt()</code> control configuration to avoid the unstable extra catch-F variance parameterization.</p>
 <section id="results" class="level2">
 <h2 data-anchor-id="results">Results</h2>
 <table class="caption-top table">
@@ -2303,6 +2304,7 @@ border-bottom: 4px solid #1b4576;
 <li><code>JM_sam</code> is the canonical repository for the SAM workflow and active report.</li>
 <li>The <code>JM_SCW_prep/sam</code> report is copied into <code>scw_prep_f5a21f0/</code> only to retain the earlier rendered result for provenance.</li>
 <li>New SAM changes should be made in <code>JM_sam</code>, not in <code>JM_SCW_prep/sam</code>.</li>
+<li>The active report describes the current number-at-age index handling and <code>build_ctrl_alt()</code> workflow.</li>
 </ul>
 </section>
 
