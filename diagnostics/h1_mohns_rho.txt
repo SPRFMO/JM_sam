@@ -1,0 +1,3 @@
+Mohn's rho
+  SSB : -0.1704
+  Fbar: 0.2733

@@ -1,0 +1,2212 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Niels T. Hintzen">
+<meta name="dcterms.date" content="2026-04-28">
+
+<title>SAM Diagnostics for the Jack Mackerel Assessment</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="sam_diagnostics_files/libs/clipboard/clipboard.min.js"></script>
+<script src="sam_diagnostics_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="sam_diagnostics_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="sam_diagnostics_files/libs/quarto-html/popper.min.js"></script>
+<script src="sam_diagnostics_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="sam_diagnostics_files/libs/quarto-html/anchor.min.js"></script>
+<link href="sam_diagnostics_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="sam_diagnostics_files/libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="sam_diagnostics_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="sam_diagnostics_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="sam_diagnostics_files/libs/bootstrap/bootstrap-138a6193a3bd40baf1e627da441a4734.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="sam_diagnostics_files/libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="sam_diagnostics_files/libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="sam_diagnostics_files/libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-intro" id="toc-sec-intro" class="nav-link active" data-scroll-target="#sec-intro"><span class="header-section-number">1</span> Introduction</a>
+  <ul class="collapse">
+  <li><a href="#background-and-motivation" id="toc-background-and-motivation" class="nav-link" data-scroll-target="#background-and-motivation"><span class="header-section-number">1.1</span> Background and motivation</a>
+  <ul class="collapse">
+  <li><a href="#the-sprfmo-jack-mackerel-mse-programme" id="toc-the-sprfmo-jack-mackerel-mse-programme" class="nav-link" data-scroll-target="#the-sprfmo-jack-mackerel-mse-programme"><span class="header-section-number">1.1.1</span> The SPRFMO Jack Mackerel MSE programme</a></li>
+  <li><a href="#role-of-this-sam-analysis" id="toc-role-of-this-sam-analysis" class="nav-link" data-scroll-target="#role-of-this-sam-analysis"><span class="header-section-number">1.1.2</span> Role of this SAM analysis</a></li>
+  </ul></li>
+  <li><a href="#the-state-space-assessment-model-sam" id="toc-the-state-space-assessment-model-sam" class="nav-link" data-scroll-target="#the-state-space-assessment-model-sam"><span class="header-section-number">1.2</span> The State-Space Assessment Model (SAM)</a>
+  <ul class="collapse">
+  <li><a href="#overview-and-ices-context" id="toc-overview-and-ices-context" class="nav-link" data-scroll-target="#overview-and-ices-context"><span class="header-section-number">1.2.1</span> Overview and ICES context</a></li>
+  <li><a href="#population-process-model" id="toc-population-process-model" class="nav-link" data-scroll-target="#population-process-model"><span class="header-section-number">1.2.2</span> Population process model</a></li>
+  <li><a href="#observation-model" id="toc-observation-model" class="nav-link" data-scroll-target="#observation-model"><span class="header-section-number">1.2.3</span> Observation model</a></li>
+  <li><a href="#uncertainty-propagation" id="toc-uncertainty-propagation" class="nav-link" data-scroll-target="#uncertainty-propagation"><span class="header-section-number">1.2.4</span> Uncertainty propagation</a></li>
+  </ul></li>
+  <li><a href="#the-jjm-model" id="toc-the-jjm-model" class="nav-link" data-scroll-target="#the-jjm-model"><span class="header-section-number">1.3</span> The JJM Model</a></li>
+  <li><a href="#key-differences-between-jjm-and-sam" id="toc-key-differences-between-jjm-and-sam" class="nav-link" data-scroll-target="#key-differences-between-jjm-and-sam"><span class="header-section-number">1.4</span> Key differences between JJM and SAM</a></li>
+  <li><a href="#sec-mse-config" id="toc-sec-mse-config" class="nav-link" data-scroll-target="#sec-mse-config"><span class="header-section-number">1.5</span> SAM in the MSE context</a>
+  <ul class="collapse">
+  <li><a href="#selectivity-constant-blocks-versus-annual-random-walk" id="toc-selectivity-constant-blocks-versus-annual-random-walk" class="nav-link" data-scroll-target="#selectivity-constant-blocks-versus-annual-random-walk"><span class="header-section-number">1.5.1</span> 1. Selectivity: constant blocks versus annual random walk</a></li>
+  <li><a href="#biological-reference-points-fixed-versus-time-varying" id="toc-biological-reference-points-fixed-versus-time-varying" class="nav-link" data-scroll-target="#biological-reference-points-fixed-versus-time-varying"><span class="header-section-number">1.5.2</span> 2. Biological reference points: fixed versus time-varying</a></li>
+  <li><a href="#which-data-sources-carry-the-most-uncertainty" id="toc-which-data-sources-carry-the-most-uncertainty" class="nav-link" data-scroll-target="#which-data-sources-carry-the-most-uncertainty"><span class="header-section-number">1.5.3</span> 3. Which data sources carry the most uncertainty?</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#sec-data" id="toc-sec-data" class="nav-link" data-scroll-target="#sec-data"><span class="header-section-number">2</span> Data and Configuration</a>
+  <ul class="collapse">
+  <li><a href="#input-data" id="toc-input-data" class="nav-link" data-scroll-target="#input-data"><span class="header-section-number">2.1</span> Input data</a></li>
+  <li><a href="#sam-control-configuration" id="toc-sam-control-configuration" class="nav-link" data-scroll-target="#sam-control-configuration"><span class="header-section-number">2.2</span> SAM control configuration</a></li>
+  </ul></li>
+  <li><a href="#sec-standard" id="toc-sec-standard" class="nav-link" data-scroll-target="#sec-standard"><span class="header-section-number">3</span> Standard Diagnostics</a>
+  <ul class="collapse">
+  <li><a href="#stock-trajectory" id="toc-stock-trajectory" class="nav-link" data-scroll-target="#stock-trajectory"><span class="header-section-number">3.1</span> Stock trajectory</a></li>
+  <li><a href="#sec-obsvars" id="toc-sec-obsvars" class="nav-link" data-scroll-target="#sec-obsvars"><span class="header-section-number">3.2</span> Observation variances</a></li>
+  <li><a href="#sec-fvars" id="toc-sec-fvars" class="nav-link" data-scroll-target="#sec-fvars"><span class="header-section-number">3.3</span> F variance parameters</a></li>
+  <li><a href="#sec-sel" id="toc-sec-sel" class="nav-link" data-scroll-target="#sec-sel"><span class="header-section-number">3.4</span> Selectivity</a></li>
+  <li><a href="#sec-fatage" id="toc-sec-fatage" class="nav-link" data-scroll-target="#sec-fatage"><span class="header-section-number">3.5</span> Fishing mortality at age</a></li>
+  <li><a href="#sec-catchres" id="toc-sec-catchres" class="nav-link" data-scroll-target="#sec-catchres"><span class="header-section-number">3.6</span> Catch residuals</a></li>
+  <li><a href="#sec-surveyfit" id="toc-sec-surveyfit" class="nav-link" data-scroll-target="#sec-surveyfit"><span class="header-section-number">3.7</span> Survey index fits</a></li>
+  <li><a href="#sec-surveyres" id="toc-sec-surveyres" class="nav-link" data-scroll-target="#sec-surveyres"><span class="header-section-number">3.8</span> Survey residuals</a></li>
+  <li><a href="#sec-procerr" id="toc-sec-procerr" class="nav-link" data-scroll-target="#sec-procerr"><span class="header-section-number">3.9</span> Process error</a></li>
+  <li><a href="#sec-cor" id="toc-sec-cor" class="nav-link" data-scroll-target="#sec-cor"><span class="header-section-number">3.10</span> Correlation matrix</a></li>
+  <li><a href="#sec-sr" id="toc-sec-sr" class="nav-link" data-scroll-target="#sec-sr"><span class="header-section-number">3.11</span> Stock-recruit relationship</a></li>
+  <li><a href="#sec-natage" id="toc-sec-natage" class="nav-link" data-scroll-target="#sec-natage"><span class="header-section-number">3.12</span> Numbers at age</a></li>
+  </ul></li>
+  <li><a href="#sec-retro" id="toc-sec-retro" class="nav-link" data-scroll-target="#sec-retro"><span class="header-section-number">4</span> Retrospective Analysis</a>
+  <ul class="collapse">
+  <li><a href="#sec-retro-indepth" id="toc-sec-retro-indepth" class="nav-link" data-scroll-target="#sec-retro-indepth"><span class="header-section-number">4.1</span> In-depth retrospective diagnostics</a>
+  <ul class="collapse">
+  <li><a href="#catchability-across-peels" id="toc-catchability-across-peels" class="nav-link" data-scroll-target="#catchability-across-peels"><span class="header-section-number">4.1.1</span> Catchability across peels</a></li>
+  <li><a href="#observation-variance-across-peels" id="toc-observation-variance-across-peels" class="nav-link" data-scroll-target="#observation-variance-across-peels"><span class="header-section-number">4.1.2</span> Observation variance across peels</a></li>
+  <li><a href="#survey-residual-spaghetti" id="toc-survey-residual-spaghetti" class="nav-link" data-scroll-target="#survey-residual-spaghetti"><span class="header-section-number">4.1.3</span> Survey residual spaghetti</a></li>
+  <li><a href="#residual-stability-heatmap" id="toc-residual-stability-heatmap" class="nav-link" data-scroll-target="#residual-stability-heatmap"><span class="header-section-number">4.1.4</span> Residual stability heatmap</a></li>
+  <li><a href="#terminal-year-residuals-drivers-of-the-retrospective-pattern" id="toc-terminal-year-residuals-drivers-of-the-retrospective-pattern" class="nav-link" data-scroll-target="#terminal-year-residuals-drivers-of-the-retrospective-pattern"><span class="header-section-number">4.1.5</span> Terminal-year residuals: drivers of the retrospective pattern</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#sec-loo" id="toc-sec-loo" class="nav-link" data-scroll-target="#sec-loo"><span class="header-section-number">5</span> Leave-one-out Analysis</a></li>
+  <li><a href="#sec-q" id="toc-sec-q" class="nav-link" data-scroll-target="#sec-q"><span class="header-section-number">6</span> Catchability Diagnostics</a>
+  <ul class="collapse">
+  <li><a href="#sec-qroll" id="toc-sec-qroll" class="nav-link" data-scroll-target="#sec-qroll"><span class="header-section-number">6.1</span> Rolling residuals and catchability drift</a></li>
+  <li><a href="#sec-qshift" id="toc-sec-qshift" class="nav-link" data-scroll-target="#sec-qshift"><span class="header-section-number">6.2</span> Catchability shift at break years</a></li>
+  <li><a href="#sec-qtrend" id="toc-sec-qtrend" class="nav-link" data-scroll-target="#sec-qtrend"><span class="header-section-number">6.3</span> Implied catchability trend</a></li>
+  <li><a href="#sec-runs" id="toc-sec-runs" class="nav-link" data-scroll-target="#sec-runs"><span class="header-section-number">6.4</span> Runs test</a></li>
+  </ul></li>
+  <li><a href="#sec-conflict" id="toc-sec-conflict" class="nav-link" data-scroll-target="#sec-conflict"><span class="header-section-number">7</span> Fleet Conflict and Compensation Diagnostics</a>
+  <ul class="collapse">
+  <li><a href="#sec-crosscor" id="toc-sec-crosscor" class="nav-link" data-scroll-target="#sec-crosscor"><span class="header-section-number">7.1</span> Residual cross-correlation matrix</a></li>
+  <li><a href="#sec-pairwise" id="toc-sec-pairwise" class="nav-link" data-scroll-target="#sec-pairwise"><span class="header-section-number">7.2</span> Pairwise survey index scatter</a></li>
+  <li><a href="#sec-cohort" id="toc-sec-cohort" class="nav-link" data-scroll-target="#sec-cohort"><span class="header-section-number">7.3</span> Cohort tracking across catch fleets</a></li>
+  </ul></li>
+  <li><a href="#sec-productivity" id="toc-sec-productivity" class="nav-link" data-scroll-target="#sec-productivity"><span class="header-section-number">8</span> Productivity Analysis</a>
+  <ul class="collapse">
+  <li><a href="#rationale" id="toc-rationale" class="nav-link" data-scroll-target="#rationale"><span class="header-section-number">8.1</span> Rationale</a></li>
+  <li><a href="#method" id="toc-method" class="nav-link" data-scroll-target="#method"><span class="header-section-number">8.2</span> Method</a></li>
+  <li><a href="#productivity-over-time" id="toc-productivity-over-time" class="nav-link" data-scroll-target="#productivity-over-time"><span class="header-section-number">8.3</span> Productivity over time</a></li>
+  <li><a href="#stock-recruit-panels" id="toc-stock-recruit-panels" class="nav-link" data-scroll-target="#stock-recruit-panels"><span class="header-section-number">8.4</span> Stock-recruit panels</a></li>
+  </ul></li>
+  <li><a href="#sec-blocks" id="toc-sec-blocks" class="nav-link" data-scroll-target="#sec-blocks"><span class="header-section-number">9</span> Selectivity Block Suggestions for JJM</a>
+  <ul class="collapse">
+  <li><a href="#rationale-1" id="toc-rationale-1" class="nav-link" data-scroll-target="#rationale-1"><span class="header-section-number">9.1</span> Rationale</a></li>
+  <li><a href="#method-1" id="toc-method-1" class="nav-link" data-scroll-target="#method-1"><span class="header-section-number">9.2</span> Method</a></li>
+  <li><a href="#pc1-trajectories-and-block-boundaries" id="toc-pc1-trajectories-and-block-boundaries" class="nav-link" data-scroll-target="#pc1-trajectories-and-block-boundaries"><span class="header-section-number">9.3</span> PC1 trajectories and block boundaries</a></li>
+  <li><a href="#selectivity-curves-by-block" id="toc-selectivity-curves-by-block" class="nav-link" data-scroll-target="#selectivity-curves-by-block"><span class="header-section-number">9.4</span> Selectivity curves by block</a></li>
+  <li><a href="#suggested-block-table" id="toc-suggested-block-table" class="nav-link" data-scroll-target="#suggested-block-table"><span class="header-section-number">9.5</span> Suggested block table</a></li>
+  <li><a href="#caveats" id="toc-caveats" class="nav-link" data-scroll-target="#caveats"><span class="header-section-number">9.6</span> Caveats</a></li>
+  </ul></li>
+  <li><a href="#sec-discussion" id="toc-sec-discussion" class="nav-link" data-scroll-target="#sec-discussion"><span class="header-section-number">10</span> Discussion</a>
+  <ul class="collapse">
+  <li><a href="#utility-of-sam-as-a-diagnostic-tool" id="toc-utility-of-sam-as-a-diagnostic-tool" class="nav-link" data-scroll-target="#utility-of-sam-as-a-diagnostic-tool"><span class="header-section-number">10.1</span> Utility of SAM as a diagnostic tool</a></li>
+  <li><a href="#interpreting-catchability-diagnostics" id="toc-interpreting-catchability-diagnostics" class="nav-link" data-scroll-target="#interpreting-catchability-diagnostics"><span class="header-section-number">10.2</span> Interpreting catchability diagnostics</a></li>
+  <li><a href="#fleet-conflict-and-compensation" id="toc-fleet-conflict-and-compensation" class="nav-link" data-scroll-target="#fleet-conflict-and-compensation"><span class="header-section-number">10.3</span> Fleet conflict and compensation</a></li>
+  <li><a href="#limitations-of-the-sam-diagnostic" id="toc-limitations-of-the-sam-diagnostic" class="nav-link" data-scroll-target="#limitations-of-the-sam-diagnostic"><span class="header-section-number">10.4</span> Limitations of the SAM diagnostic</a></li>
+  <li><a href="#recommendations" id="toc-recommendations" class="nav-link" data-scroll-target="#recommendations"><span class="header-section-number">10.5</span> Recommendations</a></li>
+  </ul></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">SAM Diagnostics for the Jack Mackerel Assessment</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Niels T. Hintzen </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">April 28, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-intro" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Introduction</h1>
+<section id="background-and-motivation" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="background-and-motivation"><span class="header-section-number">1.1</span> Background and motivation</h2>
+<p>The Chilean jack mackerel (<em>Trachurus murphyi</em>) stock in the South Pacific is assessed annually by the SPRFMO Scientific Committee using the Joint Jack Mackerel Model (JJM), an age-structured statistical catch-at-age model implemented in AD Model Builder <span class="citation" data-cites="fournier2012ad">(<a href="#ref-fournier2012ad" role="doc-biblioref">Fournier et al. 2012</a>)</span>. Two competing stock-structure hypotheses are evaluated in parallel: hypothesis H1 (a single shared stock ranging from Peru to the offshore zone) and hypothesis H2 (a separate far-northern stock off Peru combined with a central-southern stock off Chile). The SC13 base model (<code>h1_1.14</code> and <code>h2_1.14</code>) constitutes the assessment configuration on which the current MSE programme is being conditioned.</p>
+<section id="the-sprfmo-jack-mackerel-mse-programme" class="level3" data-number="1.1.1">
+<h3 data-number="1.1.1" class="anchored" data-anchor-id="the-sprfmo-jack-mackerel-mse-programme"><span class="header-section-number">1.1.1</span> The SPRFMO Jack Mackerel MSE programme</h3>
+<p>A Management Strategy Evaluation (MSE) process for CJM has been underway within SPRFMO for several years and entered a critical delivery phase in 2026. The JM MSE Task Team (TT), chaired by J. Ianelli, is working through a structured programme following the Carruthers et al.&nbsp;(2024) MSE roadmap framework.</p>
+<p>A central challenge identified in BM-01 is that the SC13 JJM model is <strong>difficult to transfer directly into an MSE Operating Model</strong> for four reasons:</p>
+<ol type="1">
+<li><strong>Time-varying selectivity</strong> — JJM estimates annual selectivity within blocks, but the block structure and its projection behaviour must be simplified and fixed for OM conditioning;</li>
+<li><strong>Dynamic reference points</strong> — JJM’s <span class="math inline">\(B_\text{MSY}\)</span> and <span class="math inline">\(F_\text{MSY}\)</span> are re-derived each year and cannot be directly carried into a forward-simulation OM without specifying which biological period they represent;</li>
+<li><strong>Differing fitting and projection assumptions</strong> — the estimation model and the projection model in JJM use different assumptions (e.g.&nbsp;about recruitment) that must be reconciled before conditioning;</li>
+<li><strong>Mixed stock-structure differences</strong> — H1 and H2 require consistent treatment of the far-northern component to allow meaningful comparison across hypotheses.</li>
+</ol>
+<p>BM-01 proposes four simplified alternatives to address these issues: (§6.1) block-based selectivity, (§6.2) a single S–R relationship per hypothesis without regime splitting, (§6.3) fixed static reference points, and (§6.4) harmonised northern treatment across H1 and H2. The TT is scheduled to <strong>agree the selectivity block structure and the reference point approach at TT-03 (30 April 2026)</strong>, with the selectivity question narrowed to at most two candidates at TT-02 (9 April 2026).</p>
+<p>For the stock-recruitment relationship (BM-04), the current working prior for H1 is steepness <span class="math inline">\(h = 0.65\)</span> with recruitment variability <span class="math inline">\(\sigma_R = 0.6\)</span>. An ENSO offshore-drop scenario is also planned as a key robustness test. The OM will be implemented and validated across three platforms — FLR, RTMB, and OpenMSE (DLMtool / MSEtool) — with cross-platform validation addressed in JM-WP-SC14-02.</p>
+</section>
+<section id="role-of-this-sam-analysis" class="level3" data-number="1.1.2">
+<h3 data-number="1.1.2" class="anchored" data-anchor-id="role-of-this-sam-analysis"><span class="header-section-number">1.1.2</span> Role of this SAM analysis</h3>
+<p>The SAM model is applied here to the H1 configuration as an <strong>independent diagnostic tool</strong>, not as a replacement for JJM. Its state-space structure and internal data-weighting make it particularly well suited to addressing the open OM-design questions described above — questions that are difficult to resolve from within the JJM framework alone:</p>
+<ul>
+<li><strong>Selectivity</strong> (<a href="#sec-blocks" class="quarto-xref">Section&nbsp;9</a>): SAM’s annual random-walk F provides an objective, statistically grounded basis for choosing how many selectivity blocks are needed and where their boundaries should fall, weighted by the catch volume in each period.</li>
+<li><strong>Productivity and reference points</strong> (<a href="#sec-productivity" class="quarto-xref">Section&nbsp;8</a>): The period-specific Beverton-Holt steepness estimated here can be compared against the working prior <span class="math inline">\(h = 0.65\)</span> and used to compute block-specific <span class="math inline">\(F_\text{MSY}\)</span> for the OM.</li>
+<li><strong>Index uncertainty and fleet conflict</strong> (<a href="#sec-q" class="quarto-xref">Section&nbsp;6</a>, <a href="#sec-conflict" class="quarto-xref">Section&nbsp;7</a>): SAM’s internally estimated observation variances and the cross-fleet residual diagnostics identify which of the seven abundance indices carry the most information, which are redundant, and which show systematic trends — directly informing BM-03 (<em>Indices of Abundance: Review and Standardisation</em>) and the choice of MP input data streams for BM-04.</li>
+</ul>
+</section>
+</section>
+<section id="the-state-space-assessment-model-sam" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="the-state-space-assessment-model-sam"><span class="header-section-number">1.2</span> The State-Space Assessment Model (SAM)</h2>
+<section id="overview-and-ices-context" class="level3" data-number="1.2.1">
+<h3 data-number="1.2.1" class="anchored" data-anchor-id="overview-and-ices-context"><span class="header-section-number">1.2.1</span> Overview and ICES context</h3>
+<p>SAM was developed at the Technical University of Denmark and is maintained as an open R package (<code>stockassessment</code>). It has become the <strong>standard stock assessment model for the majority of ICES-advised stocks</strong>, including North Sea herring, North Sea cod, mackerel, blue whiting, and many others. Although it is not yet widely used outside the North Atlantic, its mathematical foundations are general and apply directly to multi-fleet pelagic assessments such as CJM <span class="citation" data-cites="nielsen2021multifleet">(<a href="#ref-nielsen2021multifleet" role="doc-biblioref">Nielsen et al. 2021</a>)</span>.</p>
+<p>The core idea is to treat the unobserved true population state — numbers-at-age and fishing mortality — as <strong>latent random variables</strong> that evolve through time according to a process model, while catch and survey observations are linked to those states through an observation model with estimated error variances. This formulation is known as a <strong>state-space model</strong> and is fitted using the <strong>Laplace approximation</strong> implemented in the <strong>TMB</strong> (Template Model Builder) automatic differentiation framework <span class="citation" data-cites="kristensen2016tmb">(<a href="#ref-kristensen2016tmb" role="doc-biblioref">Kristensen et al. 2016</a>)</span>. TMB integrates out the latent states numerically, making the Laplace approximation necessary because the catch equation’s Baranov term renders the model nonlinear in the latent states. The result is a computationally efficient, fully differentiable likelihood that propagates both process and observation uncertainty into all derived quantities.</p>
+</section>
+<section id="population-process-model" class="level3" data-number="1.2.2">
+<h3 data-number="1.2.2" class="anchored" data-anchor-id="population-process-model"><span class="header-section-number">1.2.2</span> Population process model</h3>
+<p>Log-abundance at age follows a random-walk survival equation with process noise:</p>
+<p><span class="math display">\[
+\log N_{1,t} \sim \mathcal{N}\!\bigl(\mu_R,\,\sigma_R^2\bigr)
+\qquad\text{(recruitment, treated as a free random effect)}
+\]</span></p>
+<p><span class="math display">\[
+\log N_{a,t} = \log N_{a-1,\,t-1} - Z_{a-1,\,t-1} + \varepsilon_{a,t},
+\quad \varepsilon_{a,t} \sim \mathcal{N}(0,\sigma_a^2)
+\]</span></p>
+<p>The process error <span class="math inline">\(\varepsilon_{a,t}\)</span> absorbs year-to-year deviations from the deterministic survival equation — deviations that in a classical statistical catch-at-age model would be forced into the residuals of the catch or survey likelihood. This means SAM can fit the data more honestly without over-shrinking recruitment or distorting the F trajectory to compensate for a poor-fitting year.</p>
+<p>Fishing mortality also evolves as a latent random walk:</p>
+<p><span class="math display">\[
+\log F_{a,t} = \log F_{a,t-1} + \eta_{a,t},
+\quad \eta_{a,t} \sim \mathcal{N}(0,\sigma_{F,k}^2)
+\]</span></p>
+<p>Ages that share the same variance parameter <span class="math inline">\(\sigma_{F,k}^2\)</span> are <strong>coupled</strong>: they move together through time, effectively defining a selectivity group. The number of F-variance groups, and which ages belong to each group, is a key user choice (see <a href="#sec-mse-config" class="quarto-xref">Section&nbsp;1.5</a>). Fewer groups impose a smoother, more constrained selectivity; more groups allow independent trajectories per age.</p>
+</section>
+<section id="observation-model" class="level3" data-number="1.2.3">
+<h3 data-number="1.2.3" class="anchored" data-anchor-id="observation-model"><span class="header-section-number">1.2.3</span> Observation model</h3>
+<p>Catch-at-age observations are log-normal:</p>
+<p><span class="math display">\[
+\log\hat{C}_{a,t,f} \sim \mathcal{N}\!\bigl(\log C_{a,t,f}^{\text{pred}},\,\sigma_{C,f}^2\bigr)
+\]</span></p>
+<p>Survey biomass indices (as used here, since the CJM surveys are treated as integrated biomass signals) are:</p>
+<p><span class="math display">\[
+\log\hat{I}_{s,t} \sim \mathcal{N}\!\bigl(\log(q_s\,\hat{B}_{s,t}),\,\sigma_{I,s}^2\bigr)
+\]</span></p>
+<p>where <span class="math inline">\(\hat{B}_{s,t}\)</span> is the model-predicted exploitable biomass for survey <span class="math inline">\(s\)</span>. The <strong>observation variances <span class="math inline">\(\sigma^2\)</span> are estimated from the data</strong>, not fixed externally. This is a fundamental difference from JJM, where data weights are set by the analyst. SAM’s internally estimated variances provide a direct, objective measure of the effective weight each data source receives — large variance = low effective weight.</p>
+</section>
+<section id="uncertainty-propagation" class="level3" data-number="1.2.4">
+<h3 data-number="1.2.4" class="anchored" data-anchor-id="uncertainty-propagation"><span class="header-section-number">1.2.4</span> Uncertainty propagation</h3>
+<p>Because SAM uses the Laplace approximation, the full posterior of all latent states and derived quantities (SSB, <span class="math inline">\(\bar{F}\)</span>, recruitment) is approximated as multivariate normal. This gives analytical confidence intervals for all time-series outputs without requiring MCMC sampling, making it practical to produce annual uncertainty estimates for SSB, F, and recruitment routinely.</p>
+</section>
+</section>
+<section id="the-jjm-model" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="the-jjm-model"><span class="header-section-number">1.3</span> The JJM Model</h2>
+<p>JJM is a forward-projection statistical catch-at-age model. Numbers-at-age evolve deterministically as:</p>
+<p><span class="math display">\[
+N_{a,t} = \begin{cases}
+R_t &amp; a = 1 \\
+N_{a-1,\,t-1} \exp\!\bigl(-Z_{a-1,\,t-1}\bigr) &amp; 1 &lt; a &lt; A \\
+N_{A-1,\,t-1} \exp\!\bigl(-Z_{A-1,\,t-1}\bigr) + N_{A,\,t-1}\exp\!\bigl(-Z_{A,\,t-1}\bigr) &amp; a = A
+\end{cases}
+\]</span></p>
+<p>where <span class="math inline">\(Z_{a,t} = M_{a,t} + F_{a,t}\)</span>. Fishing mortality is decomposed over fleets as:</p>
+<p><span class="math display">\[
+F_{a,t} = \sum_{f=1}^{F} s_{a,f}\,\Gamma_{f,t}
+\]</span></p>
+<p>with <span class="math inline">\(s_{a,f}\)</span> selectivity and <span class="math inline">\(\Gamma_{f,t}\)</span> the fully-selected fishing mortality. Predicted catch follows the Baranov equation <span class="citation" data-cites="hilborn1992quantitative">(<a href="#ref-hilborn1992quantitative" role="doc-biblioref">Hilborn and Walters 1992</a>)</span>:</p>
+<p><span class="math display">\[
+C_{a,t,f} = \frac{s_{a,f}\,\Gamma_{f,t}}{Z_{a,t}}\,N_{a,t}
+  \bigl(1 - \exp(-Z_{a,t})\bigr)
+\]</span></p>
+<p>Survey indices are modelled as:</p>
+<p><span class="math display">\[
+I_{s,t} = q_s \sum_a v_{a,s}\,N_{a,t}\,w_{a,t}
+\]</span></p>
+<p>Observed compositions (age and length) are fitted with a multinomial likelihood. Data weights are specified externally (e.g.&nbsp;Francis reweighting, <span class="citation" data-cites="francis2011data">Francis (<a href="#ref-francis2011data" role="doc-biblioref">2011</a>)</span>).</p>
+</section>
+<section id="key-differences-between-jjm-and-sam" class="level2" data-number="1.4">
+<h2 data-number="1.4" class="anchored" data-anchor-id="key-differences-between-jjm-and-sam"><span class="header-section-number">1.4</span> Key differences between JJM and SAM</h2>
+<div id="tbl-compare" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-compare-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: Key differences between JJM and SAM
+</figcaption>
+<div aria-describedby="tbl-compare-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Feature</th>
+<th>JJM</th>
+<th>SAM</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Framework</strong></td>
+<td>Deterministic forward projection (ADMB)</td>
+<td>State-space model with Laplace approximation (TMB)</td>
+</tr>
+<tr class="even">
+<td><strong>Process error</strong></td>
+<td>None — <span class="math inline">\(N\)</span> fully determined by catch</td>
+<td>Random walk in <span class="math inline">\(\log N\)</span> and <span class="math inline">\(\log F\)</span></td>
+</tr>
+<tr class="odd">
+<td><strong>Composition data</strong></td>
+<td>Age and length proportions (multinomial)</td>
+<td>Age proportions only (log-normal)</td>
+</tr>
+<tr class="even">
+<td><strong>Data weighting</strong></td>
+<td>External (Francis, input ESS)</td>
+<td>Internal — <span class="math inline">\(\sigma^2\)</span> estimated</td>
+</tr>
+<tr class="odd">
+<td><strong>Selectivity</strong></td>
+<td>Constant within user-defined year blocks</td>
+<td>Annual random walk; blocks optional</td>
+</tr>
+<tr class="even">
+<td><strong>Catchability</strong></td>
+<td>Fixed <span class="math inline">\(q\)</span> per survey</td>
+<td>Fixed <span class="math inline">\(q\)</span>; residual trends reveal drift</td>
+</tr>
+<tr class="odd">
+<td><strong>Reference points</strong></td>
+<td>Computed internally per selectivity block via SPR/YPR</td>
+<td>Externally estimated</td>
+</tr>
+<tr class="even">
+<td><strong>Uncertainty</strong></td>
+<td>Hessian-based delta method</td>
+<td>Laplace approximation; MCMC optional</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</section>
+<section id="sec-mse-config" class="level2" data-number="1.5">
+<h2 data-number="1.5" class="anchored" data-anchor-id="sec-mse-config"><span class="header-section-number">1.5</span> SAM in the MSE context</h2>
+<p>The MSE process for CJM requires an Operating Model (OM) that can generate plausible stock trajectories under different harvest control rules. The OM is typically conditioned on the assessment model: its parameter estimates, uncertainty structure, and dynamic assumptions are inherited directly from the assessment. Three open questions are particularly important for the OM design, and SAM provides evidence for each.</p>
+<section id="selectivity-constant-blocks-versus-annual-random-walk" class="level3" data-number="1.5.1">
+<h3 data-number="1.5.1" class="anchored" data-anchor-id="selectivity-constant-blocks-versus-annual-random-walk"><span class="header-section-number">1.5.1</span> 1. Selectivity: constant blocks versus annual random walk</h3>
+<p>JJM parameterises selectivity as constant within user-defined year blocks. The OM inherits these blocks directly, meaning the OM’s F trajectory in the projection period is governed by the selectivity pattern of the most recent block. If that block does not accurately represent the current fleet behaviour — because it is too long, or because the true selectivity has been gradually shifting — the OM will be biased.</p>
+<p>SAM estimates selectivity annually via a random walk and therefore reveals <em>when</em> the selectivity shape changed significantly. The block analysis in <a href="#sec-blocks" class="quarto-xref">Section&nbsp;9</a> translates those SAM-estimated change points into suggested block boundaries for JJM, ranked by importance. The OM designer can then choose the minimum number of blocks that captures the dominant selectivity regimes without overfitting.</p>
+<p>The key trade-off is:</p>
+<ul>
+<li><strong>Too few blocks</strong>: selectivity is over-smoothed; the OM misrepresents the current fleet’s age targeting and will generate biased F projections.</li>
+<li><strong>Too many blocks</strong>: each block is estimated from fewer data, increasing uncertainty in selectivity; the OM carries more estimation noise into projections.</li>
+</ul>
+</section>
+<section id="biological-reference-points-fixed-versus-time-varying" class="level3" data-number="1.5.2">
+<h3 data-number="1.5.2" class="anchored" data-anchor-id="biological-reference-points-fixed-versus-time-varying"><span class="header-section-number">1.5.2</span> 2. Biological reference points: fixed versus time-varying</h3>
+<p>JJM already computes biological reference points (<span class="math inline">\(F_\text{MSY}\)</span>, <span class="math inline">\(B_\text{MSY}\)</span>, <span class="math inline">\(B_{40\%}\)</span>) internally via equilibrium per-recruit (SPR/YPR) analysis within each selectivity block. Because JJM estimates a separate selectivity pattern for each block, the reference points it reports are inherently block-specific: changing the selectivity block structure directly changes the reference point estimates. This is the mechanism through which time-varying reference points enter the assessment — there is no need to compute them externally.</p>
+<p>The key question for the OM is therefore not <em>how</em> to obtain time-varying reference points, but <em>whether</em> the JJM block-specific values show meaningful variation that should be preserved in the OM, versus collapsing to a single set. The productivity analysis in <a href="#sec-productivity" class="quarto-xref">Section&nbsp;8</a> provides complementary evidence: if the Beverton-Holt steepness <span class="math inline">\(h\)</span> shows a statistically supported shift across periods, this corroborates using the block-specific reference points rather than a time-series average. Conversely, if steepness is stable across the full time series, a single set of reference points (derived from the most recent or most representative selectivity block) is sufficient for the OM.</p>
+<p>In practice, the OM designer should:</p>
+<ol type="1">
+<li>Confirm which JJM selectivity blocks are carried forward into the OM (informed by <a href="#sec-blocks" class="quarto-xref">Section&nbsp;9</a>).</li>
+<li>Use the JJM-reported <span class="math inline">\(F_\text{MSY}\)</span> and <span class="math inline">\(B_\text{MSY}\)</span> values for each retained block directly as the block-specific reference points.</li>
+<li>Cross-check whether the magnitude of variation in those block-specific reference points is large relative to their estimation uncertainty — if not, a single set is adequate.</li>
+</ol>
+</section>
+<section id="which-data-sources-carry-the-most-uncertainty" class="level3" data-number="1.5.3">
+<h3 data-number="1.5.3" class="anchored" data-anchor-id="which-data-sources-carry-the-most-uncertainty"><span class="header-section-number">1.5.3</span> 3. Which data sources carry the most uncertainty?</h3>
+<p>The OM must replicate the observation process — how future monitoring data will be generated and how uncertain they will be. The relative magnitude of SAM’s internally estimated observation variances (<a href="#sec-obsvars" class="quarto-xref">Section&nbsp;3.2</a>) directly answers this question: data sources with large <span class="math inline">\(\hat{\sigma}^2\)</span> contribute little to the current assessment and will contribute little to future assessments under the same design. The runs test (<a href="#sec-runs" class="quarto-xref">Section&nbsp;6.4</a>) identifies sources with systematic, non-random residuals — these are candidates for structural changes in the OM’s observation model (e.g.&nbsp;time-varying <span class="math inline">\(q\)</span>). Together, these diagnostics provide the evidence base for deciding which surveys to include in the OM’s observation model and what variance to assign them.</p>
+</section>
+</section>
+</section>
+<section id="sec-data" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Data and Configuration</h1>
+<section id="input-data" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="input-data"><span class="header-section-number">2.1</span> Input data</h2>
+<p>The SAM fit uses the H1 single-stock FLStock (<code>h1_1.14</code>) prepared for the 2025 assessment cycle. There are four catch fleets and seven biomass-only survey indices (<a href="#tbl-surveys" class="quarto-xref">Table&nbsp;2</a>).</p>
+<div id="tbl-surveys" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-surveys-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2: Survey indices used in the SAM fit
+</figcaption>
+<div aria-describedby="tbl-surveys-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Index</th>
+<th>Type</th>
+<th>SAM treatment</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Chile_AcousCS</td>
+<td>Acoustic survey (central-south Chile)</td>
+<td>Total biomass index</td>
+</tr>
+<tr class="even">
+<td>Chile_AcousN</td>
+<td>Acoustic survey (north Chile)</td>
+<td>Total biomass index</td>
+</tr>
+<tr class="odd">
+<td>Chile_CPUE</td>
+<td>Chilean CPUE</td>
+<td>Total biomass index</td>
+</tr>
+<tr class="even">
+<td>DEPM</td>
+<td>Daily egg production method (spawning biomass)</td>
+<td>SSB index</td>
+</tr>
+<tr class="odd">
+<td>Peru_Acoustic</td>
+<td>Acoustic survey (Peru)</td>
+<td>Total biomass index</td>
+</tr>
+<tr class="even">
+<td>Peru_CPUE</td>
+<td>Peruvian CPUE</td>
+<td>Total biomass index</td>
+</tr>
+<tr class="odd">
+<td>Offshore_CPUE</td>
+<td>Offshore pelagic trawl CPUE</td>
+<td>Total biomass index</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>All indices are treated as biomass indices (age = “all”) using <code>FLIndex</code> objects with <code>type = "biomass"</code>. Acoustic surveys and CPUE indices (Chile, Peru, Offshore) are all fitted as total biomass indices (<code>biomassTreat = 5</code>); DEPM is fitted as an SSB index as it directly estimates egg production from spawning adults.</p>
+</section>
+<section id="sam-control-configuration" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="sam-control-configuration"><span class="header-section-number">2.2</span> SAM control configuration</h2>
+<p>Four catch fleets share age-coupled N states (linked cohorts) while F states are estimated independently for each fleet. Within each catch fleet, selectivity-at-age is controlled by shared N-state groups (e.g.&nbsp;ages 1–7 linked for N_Chile, ages 1–8 for SC_Chile_PS). F-variance and observation-variance parameters for the catch fleets use a single shared parameter per fleet. Surveys each receive an independent observation-variance parameter and are linked to total biomass except DEPM which uses SSB.</p>
+</section>
+</section>
+<section id="sec-standard" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Standard Diagnostics</h1>
+<section id="stock-trajectory" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="stock-trajectory"><span class="header-section-number">3.1</span> Stock trajectory</h2>
+<p>The full state-space trajectory with 95% confidence intervals. Recruitment, SSB, and mean F are estimated jointly with their process uncertainty.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-trajectory" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-trajectory-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_stock_trajectory.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;1: Model-estimated SSB (top), mean F (middle), and recruitment (bottom) with 95% confidence intervals."><img src="diagnostics/h1_stock_trajectory.png" class="img-fluid figure-img" width="800"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-trajectory-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Model-estimated SSB (top), mean F (middle), and recruitment (bottom) with 95% confidence intervals.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-trajectory-zoom" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-trajectory-zoom-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_stock_trajectory_zoom.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Figure&nbsp;2: Recent (post-2002) stock trajectory. Shaded band = 95% CI. Dashed red line (SSB panel) = JJM h1_1.14 SSB ± 95% CI."><img src="diagnostics/h1_stock_trajectory_zoom.png" class="img-fluid figure-img" width="600"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-trajectory-zoom-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Recent (post-2002) stock trajectory. Shaded band = 95% CI. Dashed red line (SSB panel) = JJM h1_1.14 SSB ± 95% CI.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-obsvars" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="sec-obsvars"><span class="header-section-number">3.2</span> Observation variances</h2>
+<p>SAM estimates observation variances internally. Small values indicate a data source is given high weight; large values indicate the model discounts that source. All catch datasets are given high weight with the offshore trawl receiving highest weight. The ratio of observation variance to coefficient of variation (CV) reflects precision versus consistency. Generally, one doesn’t want to observe low observation variance with high CVs and vice versa, indicating inappropriate model fit.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-obsvar" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-obsvar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_observation_var.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Figure&nbsp;3: Internally estimated observation variances by data source, sorted by magnitude."><img src="diagnostics/h1_observation_var.png" class="img-fluid figure-img" width="1200"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-obsvar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Internally estimated observation variances by data source, sorted by magnitude.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-obsvarcv" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-obsvarcv-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_variance_vs_cv.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Figure&nbsp;4: Observation variance versus estimation CV. Points far to the right are down-weighted by the model."><img src="diagnostics/h1_variance_vs_cv.png" class="img-fluid figure-img" width="600"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-obsvarcv-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Observation variance versus estimation CV. Points far to the right are down-weighted by the model.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-fvars" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="sec-fvars"><span class="header-section-number">3.3</span> F variance parameters</h2>
+<p>Age-coupled F parameters control how smoothly selectivity varies across ages within each fleet. Panels show the estimated variance for each age group. In general, the best fitting model showed very similar variance across all ages. The South Central fleet showed lowest variability in F over time while the Offshore fleet showed highest variability.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-fvars" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-fvars-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_fvars.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="Figure&nbsp;5: F variance parameters by fleet and age group."><img src="diagnostics/h1_fvars.png" class="img-fluid figure-img" width="800"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-fvars-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: F variance parameters by fleet and age group.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-sel" class="level2" data-number="3.4">
+<h2 data-number="3.4" class="anchored" data-anchor-id="sec-sel"><span class="header-section-number">3.4</span> Selectivity</h2>
+<p>Selectivity is expressed as F/Fbar at each age and fleet, grouped by five-year periods to show temporal trends. Changes in shape over time may indicate non-stationarity in fleet behaviour or stock demography. There is substantial change in all fleets from relatively dome shaped to increasing and vice versa. The model estimates very high selection at oldest ages in the South Central fleet which is not expected to be driven by high mortality but probably due to a lack of availability.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-sel" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-sel-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_selectivity.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Figure&nbsp;6: Estimated selectivity (F/Fbar) by fleet and five-year period. Each line is one year; colour scale = year."><img src="diagnostics/h1_selectivity.png" class="img-fluid figure-img" width="1000"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-sel-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6: Estimated selectivity (F/Fbar) by fleet and five-year period. Each line is one year; colour scale = year.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-fatage" class="level2" data-number="3.5">
+<h2 data-number="3.5" class="anchored" data-anchor-id="sec-fatage"><span class="header-section-number">3.5</span> Fishing mortality at age</h2>
+<p>Fleet-specific F at age since 2000. Each panel corresponds to one of the four catch fleets.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-fatage" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-fatage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_fatage.png" class="lightbox" data-gallery="quarto-lightbox-gallery-7" title="Figure&nbsp;7: F at age from 2000 by catch fleet. Each line is one age group."><img src="diagnostics/h1_fatage.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-fatage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7: F at age from 2000 by catch fleet. Each line is one age group.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-catchres" class="level2" data-number="3.6">
+<h2 data-number="3.6" class="anchored" data-anchor-id="sec-catchres"><span class="header-section-number">3.6</span> Catch residuals</h2>
+<p>Standardised residuals of the log-normal catch observation equation. Bubble area is proportional to the magnitude of the residual; blue = positive, red = negative. Systematic patterns (diagonal bands = cohort, horizontal bands = age, vertical bands = year effect) indicate model misspecification. There are substantial bands to be seen by age in the FarNorth fleet (age 6+), and the Offshore trawl (age 8+).</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-catchres" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-catchres-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_catch_residuals.png" class="lightbox" data-gallery="quarto-lightbox-gallery-8" title="Figure&nbsp;8: Standardised catch residuals by fleet. Bubble size = |residual|; blue = positive, red = negative."><img src="diagnostics/h1_catch_residuals.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-catchres-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8: Standardised catch residuals by fleet. Bubble size = |residual|; blue = positive, red = negative.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-surveyfit" class="level2" data-number="3.7">
+<h2 data-number="3.7" class="anchored" data-anchor-id="sec-surveyfit"><span class="header-section-number">3.7</span> Survey index fits</h2>
+<p>Observed biomass index values (points) against model-predicted values (red line) for each survey. Persistent bias in a subset of years suggests time-varying catchability. There is considerably misfit for most of the indices. Especially pronounced are the misfits for Acoustic North, The Chilean CPUE, offshore CPUE and Peruvian CPUE.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-surveyfit" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-surveyfit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_index_fits.png" class="lightbox" data-gallery="quarto-lightbox-gallery-9" title="Figure&nbsp;9: Survey index fits. Points = observed; red line = model prediction."><img src="diagnostics/h1_index_fits.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-surveyfit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9: Survey index fits. Points = observed; red line = model prediction.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-surveyres" class="level2" data-number="3.8">
+<h2 data-number="3.8" class="anchored" data-anchor-id="sec-surveyres"><span class="header-section-number">3.8</span> Survey residuals</h2>
+<p>Lollipop residual plot for survey biomass indices. A trend in residuals (e.g.&nbsp;positive early years and negative late years) indicates that SAM’s fixed-<span class="math inline">\(q\)</span> assumption is violated for that survey.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-surveyres" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-surveyres-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_survey_residuals.png" class="lightbox" data-gallery="quarto-lightbox-gallery-10" title="Figure&nbsp;10: Standardised survey residuals by index."><img src="diagnostics/h1_survey_residuals.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-surveyres-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;10: Standardised survey residuals by index.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-procerr" class="level2" data-number="3.9">
+<h2 data-number="3.9" class="anchored" data-anchor-id="sec-procerr"><span class="header-section-number">3.9</span> Process error</h2>
+<p>The process-error plots show the estimated deviation in log-numbers (top) and log-mortality (bottom) by age and year. Large process errors indicate years where the model needed to absorb information that the deterministic population projection could not explain. From age 6+ there are substantial temporal patterns with age 6 &amp; 7 being opposite in sign from age 8 &amp; 9 which may reflect issues with age reading. There is a general tendency to overestimate older ages.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-procerr-n" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-procerr-n-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_procerr_N.png" class="lightbox" data-gallery="quarto-lightbox-gallery-11" title="Figure&nbsp;11: Process errors in log-N by age and year (relative, stock weight-scaled)."><img src="diagnostics/h1_procerr_N.png" class="img-fluid figure-img" width="800"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-procerr-n-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11: Process errors in log-N by age and year (relative, stock weight-scaled).
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-procerr-m" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-procerr-m-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_procerr_M.png" class="lightbox" data-gallery="quarto-lightbox-gallery-12" title="Figure&nbsp;12: Process errors in log-mortality by age and year."><img src="diagnostics/h1_procerr_M.png" class="img-fluid figure-img" width="800"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-procerr-m-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;12: Process errors in log-mortality by age and year.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-cor" class="level2" data-number="3.10">
+<h2 data-number="3.10" class="anchored" data-anchor-id="sec-cor"><span class="header-section-number">3.10</span> Correlation matrix</h2>
+<p>The parameter correlation matrix provides a summary of structural collinearity in the model. There is high correlation between the between-age correlation (itrans_rho) in the F states and the variance parameters (logSdLogFsta) as s well as within the variance parameters. All other correlations are low.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-cor" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-cor-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_cor_params.png" class="lightbox" data-gallery="quarto-lightbox-gallery-13" title="Figure&nbsp;13: Pairwise correlation matrix of estimated parameters."><img src="diagnostics/h1_cor_params.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-cor-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;13: Pairwise correlation matrix of estimated parameters.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-sr" class="level2" data-number="3.11">
+<h2 data-number="3.11" class="anchored" data-anchor-id="sec-sr"><span class="header-section-number">3.11</span> Stock-recruit relationship</h2>
+<p>The SSB–recruitment scatter provides a visual check on plausible stock dynamics. The absence of a strong Beverton-Holt or Ricker relationship is expected for short-lived pelagic species where recruitment is highly variable. Points coloured by year; path shows chronological sequence.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-sr" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-sr-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_stock_recruit.png" class="lightbox" data-gallery="quarto-lightbox-gallery-14" title="Figure&nbsp;14: Estimated SSB vs age-1 recruitment. Points coloured by year; path shows chronological sequence."><img src="diagnostics/h1_stock_recruit.png" class="img-fluid figure-img" width="600"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-sr-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;14: Estimated SSB vs age-1 recruitment. Points coloured by year; path shows chronological sequence.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-natage" class="level2" data-number="3.12">
+<h2 data-number="3.12" class="anchored" data-anchor-id="sec-natage"><span class="header-section-number">3.12</span> Numbers at age</h2>
+<p>Model-estimated stock numbers at age on a log scale since 2000. Parallel lines indicate stable age structure; divergence highlights cohort events or shifts in F.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-natage" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-natage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_natage.png" class="lightbox" data-gallery="quarto-lightbox-gallery-15" title="Figure&nbsp;15: Estimated stock numbers at age (log-scale) from 2000."><img src="diagnostics/h1_natage.png" class="img-fluid figure-img" width="800"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-natage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;15: Estimated stock numbers at age (log-scale) from 2000.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="sec-retro" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Retrospective Analysis</h1>
+<p>Retrospective analyses sequentially remove the most recent year of data and re-fit the model. A systematic upward or downward revision of SSB or Fbar in the terminal year indicates a retrospective pattern, quantified by Mohn’s <span class="math inline">\(\rho\)</span> <span class="citation" data-cites="mohn1999retrospective">(<a href="#ref-mohn1999retrospective" role="doc-biblioref">Mohn 1999</a>)</span>. In general, retrospective patterns are reasonable for SSB (which is estimated with large uncertainty) and F.</p>
+<p><span class="math display">\[
+\rho = \frac{1}{n}\sum_{p=1}^{n}\frac{\hat{\theta}_{T-p,T-p} - \hat{\theta}_{T-p,T}}{\hat{\theta}_{T-p,T}}
+\]</span></p>
+<p>where <span class="math inline">\(\hat{\theta}_{T-p,T-p}\)</span> is the terminal-year estimate in the peel ending at year <span class="math inline">\(T-p\)</span> and <span class="math inline">\(\hat{\theta}_{T-p,T}\)</span> is the full-model estimate for the same year. Values of <span class="math inline">\(|\rho| &gt; 0.20\)</span> for SSB or <span class="math inline">\(|\rho| &gt; 0.30\)</span> for F are commonly considered problematic <span class="citation" data-cites="mohn1999retrospective">(<a href="#ref-mohn1999retrospective" role="doc-biblioref">Mohn 1999</a>)</span>.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-retro-ssb" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-retro-ssb-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_retro_ssb.png" class="lightbox" data-gallery="quarto-lightbox-gallery-16" title="Figure&nbsp;16: Retrospective SSB trajectories (10 peels). Black line and shaded band = full model; coloured lines = retrospective peels; dashed green = JJM h1_1.14 SSB ± 95% CI."><img src="diagnostics/h1_retro_ssb.png" class="img-fluid figure-img" width="800"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-retro-ssb-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;16: Retrospective SSB trajectories (10 peels). Black line and shaded band = full model; coloured lines = retrospective peels; dashed green = JJM h1_1.14 SSB ± 95% CI.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-retro-fbar" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-retro-fbar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_retro_fbar.png" class="lightbox" data-gallery="quarto-lightbox-gallery-17" title="Figure&nbsp;17: Retrospective Fbar trajectories."><img src="diagnostics/h1_retro_fbar.png" class="img-fluid figure-img" width="800"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-retro-fbar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;17: Retrospective Fbar trajectories.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<pre><code>Mohn's rho
+  SSB : -0.3889
+  Fbar: 0.6556
+</code></pre>
+<section id="sec-retro-indepth" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="sec-retro-indepth"><span class="header-section-number">4.1</span> In-depth retrospective diagnostics</h2>
+<p>Large retrospective patterns can arise from several sources: (i) re-estimation of catchability and observation-variance parameters as data are added; (ii) high-influence observations that cause the model to re-interpret earlier years once the terminal year is included; or (iii) surveys whose residual structure changes systematically as more data are appended. The following four diagnostics, run with residuals enabled in each retrospective peel, help identify which mechanism is dominant.</p>
+<section id="catchability-across-peels" class="level3" data-number="4.1.1">
+<h3 data-number="4.1.1" class="anchored" data-anchor-id="catchability-across-peels"><span class="header-section-number">4.1.1</span> Catchability across peels</h3>
+<p>Catchability (<span class="math inline">\(\log q\)</span>) is re-estimated in each peeled model. A stable <span class="math inline">\(\log q\)</span> across peels indicates that the parameter is identified by the bulk of the time-series and is not being pulled by a small number of terminal-year observations. Large drifts — particularly in the most recent peels — suggest that new data are revising the model’s view of that survey’s relationship to biomass, which in turn propagates into a retrospective SSB revision. Especially the acoustic North and Peruvian CPUE show consistent trends in estimated catchability. In both cases, catcahbility increases meaning that the indices ‘see’ more fish. Declines are visible for the Offshore CPUE and the Chilean CPUE.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-retro-q" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-retro-q-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_retro_q_params.png" class="lightbox" data-gallery="quarto-lightbox-gallery-18" title="Figure&nbsp;18: Estimated log-catchability per survey across retrospective peels. x-axis = terminal year of each peel; a stable line indicates the parameter is well-identified throughout the series."><img src="diagnostics/h1_retro_q_params.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-retro-q-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;18: Estimated log-catchability per survey across retrospective peels. x-axis = terminal year of each peel; a stable line indicates the parameter is well-identified throughout the series.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="observation-variance-across-peels" class="level3" data-number="4.1.2">
+<h3 data-number="4.1.2" class="anchored" data-anchor-id="observation-variance-across-peels"><span class="header-section-number">4.1.2</span> Observation variance across peels</h3>
+<p>Observation-variance (<span class="math inline">\(\sigma^2\)</span>) parameters govern how much weight is placed on each data source. If <span class="math inline">\(\sigma^2\)</span> for a survey drifts as years are removed, it signals that the noise structure inferred from recent data differs from the historical period — often a sign of a trend in data quality or catchability that the model absorbs into the variance estimate rather than the mean. The observation variance of the offshore and South Cental fishery has increased considerably over the past 5 years, but are still estimated at low levels. There seems to be some model instability which shows as sudden drops in observation variance for the Far North fleet.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-retro-obsvar" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-retro-obsvar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_retro_obsvar_params.png" class="lightbox" data-gallery="quarto-lightbox-gallery-19" title="Figure&nbsp;19: Estimated observation variances across retrospective peels, split by catch fleets (top) and survey indices (bottom)."><img src="diagnostics/h1_retro_obsvar_params.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-retro-obsvar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;19: Estimated observation variances across retrospective peels, split by catch fleets (top) and survey indices (bottom).
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="survey-residual-spaghetti" class="level3" data-number="4.1.3">
+<h3 data-number="4.1.3" class="anchored" data-anchor-id="survey-residual-spaghetti"><span class="header-section-number">4.1.3</span> Survey residual spaghetti</h3>
+<p>Each line shows the standardised residuals of a survey for all years from one retrospective peel. The black line is the full model. If residuals in the <em>middle</em> of the time-series shift between peels, earlier data are being re-interpreted as terminal observations change — a structural conflict between that survey and others. If only the most terminal years shift, the pattern is consistent with normal retrospective behaviour driven by low information content at the data edge.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-retro-spaghetti" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-retro-spaghetti-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_retro_residual_spaghetti.png" class="lightbox" data-gallery="quarto-lightbox-gallery-20" title="Figure&nbsp;20: Standardised survey residuals from all retrospective peels overlaid. Black line = full model; colour = terminal year of peel. Divergence from the full model in non-terminal years indicates structural conflict."><img src="diagnostics/h1_retro_residual_spaghetti.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-retro-spaghetti-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;20: Standardised survey residuals from all retrospective peels overlaid. Black line = full model; colour = terminal year of peel. Divergence from the full model in non-terminal years indicates structural conflict.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-retro-catch-spaghetti" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-retro-catch-spaghetti-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_retro_catch_residual_spaghetti.png" class="lightbox" data-gallery="quarto-lightbox-gallery-21" title="Figure&nbsp;21: Mean catch-fleet residuals (mean across ages per year) across retrospective peels."><img src="diagnostics/h1_retro_catch_residual_spaghetti.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-retro-catch-spaghetti-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;21: Mean catch-fleet residuals (mean across ages per year) across retrospective peels.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="residual-stability-heatmap" class="level3" data-number="4.1.4">
+<h3 data-number="4.1.4" class="anchored" data-anchor-id="residual-stability-heatmap"><span class="header-section-number">4.1.4</span> Residual stability heatmap</h3>
+<p>For each survey and year, the standard deviation of the standardised residual across all peels that included that year is computed. A year with high SD is re-interpreted substantially each time a new year of data is added — i.e.&nbsp;it has high leverage on the model trajectory. Years and surveys with consistently high SD are the primary suspects driving the retrospective pattern.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-retro-stability" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-retro-stability-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_retro_residual_stability.png" class="lightbox" data-gallery="quarto-lightbox-gallery-22" title="Figure&nbsp;22: SD of standardised residuals across all retrospective peels, by survey and year. High values (yellow/bright) indicate high-leverage observations that shift interpretation as more data are added."><img src="diagnostics/h1_retro_residual_stability.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-retro-stability-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;22: SD of standardised residuals across all retrospective peels, by survey and year. High values (yellow/bright) indicate high-leverage observations that shift interpretation as more data are added.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="terminal-year-residuals-drivers-of-the-retrospective-pattern" class="level3" data-number="4.1.5">
+<h3 data-number="4.1.5" class="anchored" data-anchor-id="terminal-year-residuals-drivers-of-the-retrospective-pattern"><span class="header-section-number">4.1.5</span> Terminal-year residuals: drivers of the retrospective pattern</h3>
+<p>The retrospective pattern arises because the model mis-fits certain observations at the terminal year of each peel. The plot below shows, for each fleet and each peel, the ratio of the observed to model-predicted biomass at that peel’s terminal year. A ratio consistently above 1 (blue) means the model persistently underpredicts that fleet’s terminal observation — causing it to revise the stock trajectory upward when a new year is added, which produces a negative Mohn’s ρ for SSB. The reverse applies for ratios below 1 (red). Surveys or catch fleets with consistently one-sided bars are the primary drivers of the retrospective.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-retro-topchange" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-retro-topchange-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_retro_residual_topchange.png" class="lightbox" data-gallery="quarto-lightbox-gallery-23" title="Figure&nbsp;23: Observed / predicted biomass ratio at the terminal year of each retrospective peel, per fleet. Blue = model underpredicts; red = overpredicts. Consistent direction = systematic mis-fit driving the retrospective pattern."><img src="diagnostics/h1_retro_residual_topchange.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-retro-topchange-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;23: Observed / predicted biomass ratio at the terminal year of each retrospective peel, per fleet. Blue = model underpredicts; red = overpredicts. Consistent direction = systematic mis-fit driving the retrospective pattern.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="sec-loo" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Leave-one-out Analysis</h1>
+<p>Leave-one-out (LOO) analysis refits the model seven times, each time omitting one survey group entirely. For the three surveys with JJM q-break years (Chile_AcousCS, Chile_CPUE, Offshore_CPUE), both the early and late sub-series are dropped together so that each LOO run represents a genuine removal of that data source.</p>
+<p>The resulting SSB, Fbar, and recruitment trajectories are overlaid on the full model estimate. A large shift when a survey is dropped indicates that the model is strongly influenced by that data source — either because it carries substantial information or because it is in conflict with other inputs. Surveys whose removal causes little change are relatively redundant given the remaining data.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-loo-ssb" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-loo-ssb-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_loo_ssb.png" class="lightbox" data-gallery="quarto-lightbox-gallery-24" title="Figure&nbsp;24: Leave-one-out SSB. Black line = full model; coloured lines = model with that survey group dropped (no CI shown). Dashed green = JJM h1_1.14 SSB."><img src="diagnostics/h1_loo_ssb.png" class="img-fluid figure-img" width="800"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-loo-ssb-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;24: Leave-one-out SSB. Black line = full model; coloured lines = model with that survey group dropped (no CI shown). Dashed green = JJM h1_1.14 SSB.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-loo-fbar" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-loo-fbar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_loo_fbar.png" class="lightbox" data-gallery="quarto-lightbox-gallery-25" title="Figure&nbsp;25: Leave-one-out mean F."><img src="diagnostics/h1_loo_fbar.png" class="img-fluid figure-img" width="800"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-loo-fbar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;25: Leave-one-out mean F.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-loo-rec" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-loo-rec-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_loo_rec.png" class="lightbox" data-gallery="quarto-lightbox-gallery-26" title="Figure&nbsp;26: Leave-one-out recruitment."><img src="diagnostics/h1_loo_rec.png" class="img-fluid figure-img" width="800"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-loo-rec-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;26: Leave-one-out recruitment.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-q" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Catchability Diagnostics</h1>
+<p>Fixed catchability (<span class="math inline">\(q\)</span>) is one of the most consequential assumptions in any assessment model. If the true <span class="math inline">\(q\)</span> of a survey changes over time — due to changes in gear efficiency, stock distribution, or survey design — the model will accumulate systematic residuals. The following diagnostics are designed to detect and characterise such trends.</p>
+<section id="sec-qroll" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="sec-qroll"><span class="header-section-number">6.1</span> Rolling residuals and catchability drift</h2>
+<p>A five-year rolling mean of standardised residuals reveals slow shifts in effective catchability. Persistent positive residuals indicate the model is under-predicting the survey (i.e.&nbsp;<span class="math inline">\(q\)</span> is in reality increasing), and vice versa. The figure clearly shows that several indices suffer from trends in residuals, specifically the the Chilean CPUE, offshore CPUE, Peruvian Acoustic.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-qroll" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-qroll-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_q_rolling_residuals.png" class="lightbox" data-gallery="quarto-lightbox-gallery-27" title="Figure&nbsp;27: Survey residuals (bars) with 5-year rolling mean (line). A trend in the rolling mean indicates time-varying catchability."><img src="diagnostics/h1_q_rolling_residuals.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-qroll-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;27: Survey residuals (bars) with 5-year rolling mean (line). A trend in the rolling mean indicates time-varying catchability.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-qshift" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="sec-qshift"><span class="header-section-number">6.2</span> Catchability shift at break years</h2>
+<p>The JJM <code>h1_1.14</code> control file assigns discrete q-break years to three indices (Chile_AcousCS: 2002, Chile_CPUE: 2000, Offshore_CPUE: 2021). To honour these structural breaks, each of these indices is split into an early and a late sub-series in SAM, with the two sub-series sharing the same observation variance parameter but receiving independent catchability estimates. The figure below shows the estimated log(q) for the early and late periods; a large shift indicates that the survey efficiency or stock availability changed substantially at the break year.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-qshift" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-qshift-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_catchability_change.png" class="lightbox" data-gallery="quarto-lightbox-gallery-28" title="Figure&nbsp;28: Estimated log-catchability for early (blue) and late (red) sub-series of the three indices with JJM q-break years. Lines connect the two periods within each index."><img src="diagnostics/h1_catchability_change.png" class="img-fluid figure-img" width="700"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-qshift-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;28: Estimated log-catchability for early (blue) and late (red) sub-series of the three indices with JJM q-break years. Lines connect the two periods within each index.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-qtrend" class="level2" data-number="6.3">
+<h2 data-number="6.3" class="anchored" data-anchor-id="sec-qtrend"><span class="header-section-number">6.3</span> Implied catchability trend</h2>
+<p>The quantity <span class="math inline">\(\log(I_t) - \log(\hat{B}_t)\)</span> is proportional to <span class="math inline">\(\log(q_t)\)</span>. Centring this series by its mean isolates the relative change in <span class="math inline">\(q\)</span> over time. A significant linear trend (shown in grey) indicates that the constant-<span class="math inline">\(q\)</span> assumption is violated. Only the Chilean Acoustic CS, the DEPM and the Peruvian CPUE show no significant trend.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-qtrend" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-qtrend-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_q_trend.png" class="lightbox" data-gallery="quarto-lightbox-gallery-29" title="Figure&nbsp;29: Implied log-catchability relative to fleet mean. Slope ≠ 0 indicates time-varying q. OLS trend shown in black."><img src="diagnostics/h1_q_trend.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-qtrend-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;29: Implied log-catchability relative to fleet mean. Slope ≠ 0 indicates time-varying q. OLS trend shown in black.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-runs" class="level2" data-number="6.4">
+<h2 data-number="6.4" class="anchored" data-anchor-id="sec-runs"><span class="header-section-number">6.4</span> Runs test</h2>
+<p>The Wald-Wolfowitz runs test <span class="citation" data-cites="methot2013stock">(<a href="#ref-methot2013stock" role="doc-biblioref">Methot and Wetzel 2013</a>)</span> evaluates whether the signs of residuals are distributed randomly. Significantly too few runs (p &lt; 0.05) indicates a non-random pattern, most commonly caused by time-varying catchability or model misspecification.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-runs" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-runs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_runs_test.png" class="lightbox" data-gallery="quarto-lightbox-gallery-30" title="Figure&nbsp;30: Runs test p-value for each fleet. Bars below the dashed line (p = 0.05) indicate non-random residuals."><img src="diagnostics/h1_runs_test.png" class="img-fluid figure-img" width="700"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-runs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;30: Runs test p-value for each fleet. Bars below the dashed line (p = 0.05) indicate non-random residuals.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div id="tbl-runs" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-runs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;3: Runs test results by fleet.
+</figcaption>
+<div aria-describedby="tbl-runs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="cell caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 28%">
+<col style="width: 4%">
+<col style="width: 9%">
+<col style="width: 19%">
+<col style="width: 9%">
+<col style="width: 10%">
+<col style="width: 17%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">fleet</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">n_runs</th>
+<th style="text-align: right;">expected_runs</th>
+<th style="text-align: right;">z</th>
+<th style="text-align: right;">p_value</th>
+<th style="text-align: left;">result</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">catch N_Chile</td>
+<td style="text-align: right;">56</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">26.1</td>
+<td style="text-align: right;">-1.841</td>
+<td style="text-align: right;">0.0656</td>
+<td style="text-align: left;">pass</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch SC_Chile_PS</td>
+<td style="text-align: right;">56</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: right;">25.4</td>
+<td style="text-align: right;">-3.233</td>
+<td style="text-align: right;">0.0012</td>
+<td style="text-align: left;">FAIL (trend)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">catch FarNorth</td>
+<td style="text-align: right;">56</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">29.0</td>
+<td style="text-align: right;">-4.585</td>
+<td style="text-align: right;">0.0000</td>
+<td style="text-align: left;">FAIL (trend)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch Offshore_Trawl</td>
+<td style="text-align: right;">56</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">23.0</td>
+<td style="text-align: right;">-2.407</td>
+<td style="text-align: right;">0.0161</td>
+<td style="text-align: left;">FAIL (trend)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Chile_AcousCS</td>
+<td style="text-align: right;">13</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">7.5</td>
+<td style="text-align: right;">-1.435</td>
+<td style="text-align: right;">0.1512</td>
+<td style="text-align: left;">pass</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Chile_AcousN</td>
+<td style="text-align: right;">42</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">8.3</td>
+<td style="text-align: right;">3.445</td>
+<td style="text-align: right;">0.0006</td>
+<td style="text-align: left;">FAIL (trend)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Chile_CPUE</td>
+<td style="text-align: right;">43</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">22.4</td>
+<td style="text-align: right;">-3.225</td>
+<td style="text-align: right;">0.0013</td>
+<td style="text-align: left;">FAIL (trend)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">DEPM</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">4.6</td>
+<td style="text-align: right;">3.334</td>
+<td style="text-align: right;">0.0009</td>
+<td style="text-align: left;">FAIL (trend)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Peru_Acoustic</td>
+<td style="text-align: right;">29</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">13.4</td>
+<td style="text-align: right;">-1.518</td>
+<td style="text-align: right;">0.1291</td>
+<td style="text-align: left;">pass</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Peru_CPUE</td>
+<td style="text-align: right;">24</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">12.9</td>
+<td style="text-align: right;">-2.488</td>
+<td style="text-align: right;">0.0129</td>
+<td style="text-align: left;">FAIL (trend)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Offshore_CPUE</td>
+<td style="text-align: right;">17</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">9.5</td>
+<td style="text-align: right;">-1.745</td>
+<td style="text-align: right;">0.0810</td>
+<td style="text-align: left;">pass</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</section>
+</section>
+<section id="sec-conflict" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Fleet Conflict and Compensation Diagnostics</h1>
+<p>When multiple fleets and surveys contribute information to the same population trajectory, they may provide conflicting signals. SAM’s internal weighting resolves conflicts by down-weighting inconsistent sources, but residual patterns can still reveal the nature of the tension.</p>
+<section id="sec-crosscor" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="sec-crosscor"><span class="header-section-number">7.1</span> Residual cross-correlation matrix</h2>
+<p>The cross-correlation of annual (mean) residuals between all fleets identifies structural conflicts. A strong negative correlation between two fleets means one over-predicts systematically when the other under-predicts — a diagnostic signal for fleet compensation. Positive correlations suggest fleets respond coherently to the same environmental or stock signal. Especially the offshore CPUE contradicts in trend with the Chilean SC catch data, although the correlation with the Chilean SC CPUE is high.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-crosscor" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-crosscor-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_residual_crosscor.png" class="lightbox" data-gallery="quarto-lightbox-gallery-31" title="Figure&nbsp;31: Cross-correlation of mean annual residuals between all fleets. Red = negative correlation (conflict); blue = positive (co-vary)."><img src="diagnostics/h1_residual_crosscor.png" class="img-fluid figure-img" width="800"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-crosscor-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;31: Cross-correlation of mean annual residuals between all fleets. Red = negative correlation (conflict); blue = positive (co-vary).
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-pairwise" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="sec-pairwise"><span class="header-section-number">7.2</span> Pairwise survey index scatter</h2>
+<p>Plotting pairs of survey indices over shared years shows whether surveys agree on the direction and magnitude of stock change. Diverging trends or low correlations indicate that surveys sample different components of the stock or are affected by different sources of variability.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-pairwise" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-pairwise-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_survey_pairwise.png" class="lightbox" data-gallery="quarto-lightbox-gallery-32" title="Figure&nbsp;32: Pairwise scatter of log-biomass survey indices. Points coloured by year; OLS trend shown."><img src="diagnostics/h1_survey_pairwise.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-pairwise-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;32: Pairwise scatter of log-biomass survey indices. Points coloured by year; OLS trend shown.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-cohort" class="level2" data-number="7.3">
+<h2 data-number="7.3" class="anchored" data-anchor-id="sec-cohort"><span class="header-section-number">7.3</span> Cohort tracking across catch fleets</h2>
+<p>The same cohort should be detectable across all catch fleets as it ages through the population. If catch-at-age data from different fleets show diverging relative abundance for the same cohort at the same age, it indicates either gear selectivity conflicts, spatial overlap differences, or data inconsistencies. There is very poor cohort tracking capabilities for the different catch@age data. For example, the 2018 cohort is picked up markedly different by 3 out of the 4 fleets.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-cohort" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-cohort-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_cohort_tracking.png" class="lightbox" data-gallery="quarto-lightbox-gallery-33" title="Figure&nbsp;33: Relative catch-at-age by fleet for recent cohorts. Each fleet is a colour; divergence between lines indicates fleet conflict on cohort strength or selectivity."><img src="diagnostics/h1_cohort_tracking.png" class="img-fluid figure-img" width="1000"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-cohort-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;33: Relative catch-at-age by fleet for recent cohorts. Each fleet is a colour; divergence between lines indicates fleet conflict on cohort strength or selectivity.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="sec-productivity" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Productivity Analysis</h1>
+<section id="rationale" class="level2" data-number="8.1">
+<h2 data-number="8.1" class="anchored" data-anchor-id="rationale"><span class="header-section-number">8.1</span> Rationale</h2>
+<p>The Beverton-Holt stock-recruitment relationship describes how spawning biomass (SSB) translates into future recruitment. The steepness parameter <span class="math inline">\(h\)</span> is the fraction of unfished recruitment <span class="math inline">\(R_0\)</span> that is produced at 20% of unfished SSB (<span class="math inline">\(B_0\)</span>):</p>
+<p><span class="math display">\[
+R = \frac{0.8\,R_0\,h\,\text{SSB}}{0.2\,B_0(1-h) + (5h-1)\,\text{SSB}}
+\quad\equiv\quad
+R = \frac{a\,\text{SSB}}{b + \text{SSB}},
+\quad h = \frac{0.2(b + B_0)}{b + 0.2\,B_0}
+\]</span></p>
+<p>where <span class="math inline">\(B_0\)</span> is approximated by the maximum observed SSB. High steepness (<span class="math inline">\(h &gt; 0.8\)</span>) indicates low compensation — recruitment is nearly independent of spawning biomass.</p>
+<p>A change in steepness over time signals a <strong>shift in stock productivity</strong> that is not captured by the primary assessment model (JJM uses fixed life-history parameters). Such shifts can arise from regime changes, density-dependent effects at low stock size, or environmental shifts affecting larval survival.</p>
+</section>
+<section id="method" class="level2" data-number="8.2">
+<h2 data-number="8.2" class="anchored" data-anchor-id="method"><span class="header-section-number">8.2</span> Method</h2>
+<p>Beverton-Holt curves are fitted by <strong>weighted nonlinear least squares</strong>, using uncertainty in the SAM recruitment estimate as observation weights:</p>
+<p><span class="math display">\[
+w_t = \frac{1}{\hat{\sigma}^2_{\log R_t}}, \qquad
+\hat{\sigma}_{\log R_t} \approx \frac{\text{CI}_{97.5} - \text{CI}_{2.5}}{4\,R_t}
+\]</span></p>
+<p>Change points are found by exhaustive search over all candidate break years (minimum 10 years per segment). The improvement in total weighted residual SS when adding a break is tested with an <span class="math inline">\(F\)</span>-test (2 additional parameters per break). A second break is only searched if the first is significant at <span class="math inline">\(p &lt; 0.05\)</span>.</p>
+<pre><code>Beverton-Holt productivity analysis
+B0 reference (max observed SSB): 20149
+
+Full series: h = 0.331 (1970-2025)
+1-break test: break year 1993, p = 0.3647 [not significant]
+</code></pre>
+</section>
+<section id="productivity-over-time" class="level2" data-number="8.3">
+<h2 data-number="8.3" class="anchored" data-anchor-id="productivity-over-time"><span class="header-section-number">8.3</span> Productivity over time</h2>
+<p>Annual productivity (R/SSB) with 95% confidence intervals propagated from SAM uncertainty in both recruitment and SSB via the delta method on the log scale: <span class="math inline">\(\text{SE}_{\log(R/\text{SSB})} \approx \sqrt{\text{SE}^2_{\log R} + \text{SE}^2_{\log \text{SSB}}}\)</span>. A LOESS smoother highlights the long-term trend without imposing a parametric form.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-prod-time" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-prod-time-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_productivity_time.png" class="lightbox" data-gallery="quarto-lightbox-gallery-34" title="Figure&nbsp;34: Productivity (R/SSB) over time. Points = annual estimate; bars = 95% CI; line = LOESS smoother. A declining trend indicates reducing stock productivity."><img src="diagnostics/h1_productivity_time.png" class="img-fluid figure-img" width="700"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-prod-time-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;34: Productivity (R/SSB) over time. Points = annual estimate; bars = 95% CI; line = LOESS smoother. A declining trend indicates reducing stock productivity.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="stock-recruit-panels" class="level2" data-number="8.4">
+<h2 data-number="8.4" class="anchored" data-anchor-id="stock-recruit-panels"><span class="header-section-number">8.4</span> Stock-recruit panels</h2>
+<p>Up to three panels are shown depending on how many break points are statistically supported. The legend of each multi-period panel includes the estimated steepness for that period. Error bars show 95% confidence intervals from SAM on both SSB (horizontal) and recruitment (vertical).</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-productivity" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-productivity-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_productivity_sr.png" class="lightbox" data-gallery="quarto-lightbox-gallery-35" title="Figure&nbsp;35: Beverton-Holt stock-recruit analysis. Panel 1: full time series (points coloured by year). Panel 2 (if shown): best single break, two B-H curves coloured by period with steepness in legend. Panel 3 (if shown): two breaks, three periods."><img src="diagnostics/h1_productivity_sr.png" class="img-fluid figure-img" width="450"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-productivity-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;35: Beverton-Holt stock-recruit analysis. Panel 1: full time series (points coloured by year). Panel 2 (if shown): best single break, two B-H curves coloured by period with steepness in legend. Panel 3 (if shown): two breaks, three periods.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="sec-blocks" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> Selectivity Block Suggestions for JJM</h1>
+<section id="rationale-1" class="level2" data-number="9.1">
+<h2 data-number="9.1" class="anchored" data-anchor-id="rationale-1"><span class="header-section-number">9.1</span> Rationale</h2>
+<p>JJM requires the user to pre-specify constant-selectivity blocks: periods within which selectivity-at-age is assumed to be time-invariant. In practice these blocks are set based on expert knowledge of fleet changes, but there is no objective statistical criterion for where boundaries should fall.</p>
+<p>SAM estimates selectivity annually through the random-walk F process. The trajectory of the annual selectivity <em>shape</em> (F/Fbar at age, normalised so the peak = 1) therefore provides an empirical signal of when selectivity changed significantly. A structural break in this trajectory is a principled suggestion for a new JJM block boundary.</p>
+</section>
+<section id="method-1" class="level2" data-number="9.2">
+<h2 data-number="9.2" class="anchored" data-anchor-id="method-1"><span class="header-section-number">9.2</span> Method</h2>
+<p>For each catch fleet:</p>
+<ol type="1">
+<li>The normalised selectivity-at-age vector is extracted for every year from the SAM fit (shape only: F/Fbar at age, scaled so the peak age = 1).</li>
+<li>The dominant mode of temporal variation is captured by the first principal component (PC1) of the annual selectivity matrix.</li>
+<li>The PC1 time series is split into blocks using <strong>binary segmentation</strong>, with each year weighted by its relative catch (<span class="math inline">\(w_t = C_t / \max C\)</span>). This ensures that periods with little fishing activity have minimal influence on where block boundaries are placed. Splits require <span class="math inline">\(p &lt; 0.05\)</span> (F-test) and at least five years per segment.</li>
+<li>Each detected breakpoint is assigned an <strong>importance score</strong>:</li>
+</ol>
+<p><span class="math display">\[
+\text{importance} = F_{\text{split}} \times \frac{\sum_{t \in \text{segment}} C_t}{C_{\text{total}}}
+\]</span></p>
+<p>Breakpoints are <strong>ranked 1 (most important) downward</strong>: rank 1 should be kept even if the number of blocks is reduced; rank <span class="math inline">\(k\)</span> can be dropped first. This allows a user to move from the full block structure to a simpler one by dropping the highest-numbered ranks. 5. Within-block variance, peak-selectivity age, and the percentage of total fleet catch in each block are reported as supporting statistics.</p>
+</section>
+<section id="pc1-trajectories-and-block-boundaries" class="level2" data-number="9.3">
+<h2 data-number="9.3" class="anchored" data-anchor-id="pc1-trajectories-and-block-boundaries"><span class="header-section-number">9.3</span> PC1 trajectories and block boundaries</h2>
+<p>The PC1 score over time reveals the dominant mode of selectivity change. Vertical red lines mark suggested block boundaries; the <strong>number is the importance rank</strong> (1 = most important). Grey shading behind the line shows the relative catch weight. To reduce the number of blocks, drop boundaries starting from the highest rank number.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-sel-pc1" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-sel-pc1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_selectivity_pc1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-36" title="Figure&nbsp;36: PC1 of annual selectivity shape per fleet. Red lines = block boundaries; rank label (1 = most important to retain). Grey shading = relative catch weight."><img src="diagnostics/h1_selectivity_pc1.png" class="img-fluid figure-img" width="900"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-sel-pc1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;36: PC1 of annual selectivity shape per fleet. Red lines = block boundaries; rank label (1 = most important to retain). Grey shading = relative catch weight.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="selectivity-curves-by-block" class="level2" data-number="9.4">
+<h2 data-number="9.4" class="anchored" data-anchor-id="selectivity-curves-by-block"><span class="header-section-number">9.4</span> Selectivity curves by block</h2>
+<p>Individual annual selectivity curves are shown in the colour of their assigned block; the dashed line is the block mean. Blocks with tightly clustered curves support the constant-selectivity assumption; blocks where thin lines diverge strongly from the mean suggest that within-block variation may still be substantial.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-sel-byblock" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-sel-byblock-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="diagnostics/h1_selectivity_byblock.png" class="lightbox" data-gallery="quarto-lightbox-gallery-37" title="Figure&nbsp;37: Annual selectivity curves coloured by suggested JJM block. Dashed line = block mean."><img src="diagnostics/h1_selectivity_byblock.png" class="img-fluid figure-img" width="1000"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-sel-byblock-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;37: Annual selectivity curves coloured by suggested JJM block. Dashed line = block mean.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="suggested-block-table" class="level2" data-number="9.5">
+<h2 data-number="9.5" class="anchored" data-anchor-id="suggested-block-table"><span class="header-section-number">9.5</span> Suggested block table</h2>
+<div id="tbl-blocks" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-blocks-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;4: Suggested constant-selectivity blocks for JJM by catch fleet. <strong>Catch %</strong> = percentage of total fleet catch in that block. <strong>Boundary rank</strong> = importance of the boundary ending this block (1 = most important, highest rank = drop first to reduce blocks). ‘—’ = final block (no subsequent boundary). Within-block variance is the mean temporal variance in normalised selectivity across ages; lower = more stable selectivity shape.
+</figcaption>
+<div aria-describedby="tbl-blocks-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="cell caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 4%">
+<col style="width: 4%">
+<col style="width: 3%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 6%">
+<col style="width: 8%">
+<col style="width: 9%">
+<col style="width: 39%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Fleet</th>
+<th style="text-align: right;">Block</th>
+<th style="text-align: right;">Start</th>
+<th style="text-align: right;">End</th>
+<th style="text-align: right;">N years</th>
+<th style="text-align: right;">Catch %</th>
+<th style="text-align: right;">Peak age</th>
+<th style="text-align: right;">Within-var.</th>
+<th style="text-align: left;">Boundary rank</th>
+<th style="text-align: left;">Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">catch N_Chile</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1970</td>
+<td style="text-align: right;">1991</td>
+<td style="text-align: right;">22</td>
+<td style="text-align: right;">63.0</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">0.02544</td>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">Initial block</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch N_Chile</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1992</td>
+<td style="text-align: right;">1996</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">13.1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0.01529</td>
+<td style="text-align: left;">4</td>
+<td style="text-align: left;">Peak age shifted 6 → 2 (13.1% of catch)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">catch N_Chile</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1997</td>
+<td style="text-align: right;">2009</td>
+<td style="text-align: right;">13</td>
+<td style="text-align: right;">16.4</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0.00099</td>
+<td style="text-align: left;">3</td>
+<td style="text-align: left;">Selectivity shape change (16.4% of fleet catch in block)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch N_Chile</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">2010</td>
+<td style="text-align: right;">2014</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">2.3</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0.02440</td>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">Selectivity shape change (2.3% of fleet catch in block)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">catch N_Chile</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">2015</td>
+<td style="text-align: right;">2019</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">1.1</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">0.00876</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">Peak age shifted 2 → 8 (1.1% of catch)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch N_Chile</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">2020</td>
+<td style="text-align: right;">2025</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">4.1</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">0.00113</td>
+<td style="text-align: left;">—</td>
+<td style="text-align: left;">Selectivity shape change (4.1% of fleet catch in block)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">catch SC_Chile_PS</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1970</td>
+<td style="text-align: right;">1976</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">0.4</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0.00001</td>
+<td style="text-align: left;">7</td>
+<td style="text-align: left;">Initial block</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch SC_Chile_PS</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1977</td>
+<td style="text-align: right;">1981</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">2.5</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0.00001</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">Selectivity shape change (2.5% of fleet catch in block)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">catch SC_Chile_PS</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1982</td>
+<td style="text-align: right;">1986</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">7.0</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0.02234</td>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">Selectivity shape change (7.0% of fleet catch in block)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch SC_Chile_PS</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">1987</td>
+<td style="text-align: right;">1995</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">41.2</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">0.00980</td>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">Peak age shifted 5 → 9 (41.2% of catch)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">catch SC_Chile_PS</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">1996</td>
+<td style="text-align: right;">2007</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">33.3</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">0.00843</td>
+<td style="text-align: left;">4</td>
+<td style="text-align: left;">Selectivity shape change (33.3% of fleet catch in block)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch SC_Chile_PS</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">2008</td>
+<td style="text-align: right;">2012</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">3.7</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">0.00801</td>
+<td style="text-align: left;">6</td>
+<td style="text-align: left;">Peak age shifted 9 → 7 (3.7% of catch)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">catch SC_Chile_PS</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">2013</td>
+<td style="text-align: right;">2017</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">2.3</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">0.01082</td>
+<td style="text-align: left;">3</td>
+<td style="text-align: left;">Peak age shifted 7 → 9 (2.3% of catch)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch SC_Chile_PS</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">2018</td>
+<td style="text-align: right;">2025</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">9.4</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">0.02234</td>
+<td style="text-align: left;">—</td>
+<td style="text-align: left;">Selectivity shape change (9.4% of fleet catch in block)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">catch FarNorth</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1970</td>
+<td style="text-align: right;">1994</td>
+<td style="text-align: right;">25</td>
+<td style="text-align: right;">40.3</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0.00410</td>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">Initial block</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch FarNorth</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1995</td>
+<td style="text-align: right;">2015</td>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">48.6</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0.01134</td>
+<td style="text-align: left;">3</td>
+<td style="text-align: left;">Selectivity shape change (48.6% of fleet catch in block)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">catch FarNorth</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">2016</td>
+<td style="text-align: right;">2020</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">3.1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0.00901</td>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">Selectivity shape change (3.1% of fleet catch in block)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch FarNorth</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">2021</td>
+<td style="text-align: right;">2025</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">8.0</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0.00732</td>
+<td style="text-align: left;">—</td>
+<td style="text-align: left;">Peak age shifted 3 → 5 (8.0% of catch)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">catch Offshore_Trawl</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1970</td>
+<td style="text-align: right;">1975</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">0.1</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">0.00000</td>
+<td style="text-align: left;">7</td>
+<td style="text-align: left;">Initial block</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch Offshore_Trawl</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1976</td>
+<td style="text-align: right;">1980</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">5.9</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">0.00001</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">Selectivity shape change (5.9% of fleet catch in block)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">catch Offshore_Trawl</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1981</td>
+<td style="text-align: right;">1985</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">30.3</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">0.00022</td>
+<td style="text-align: left;">3</td>
+<td style="text-align: left;">Selectivity shape change (30.3% of fleet catch in block)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch Offshore_Trawl</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">1986</td>
+<td style="text-align: right;">1990</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">33.2</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">0.00534</td>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">Selectivity shape change (33.2% of fleet catch in block)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">catch Offshore_Trawl</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">1991</td>
+<td style="text-align: right;">1995</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">4.5</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">0.00009</td>
+<td style="text-align: left;">6</td>
+<td style="text-align: left;">Selectivity shape change (4.5% of fleet catch in block)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch Offshore_Trawl</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">1996</td>
+<td style="text-align: right;">2000</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0.0</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">0.00163</td>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">Selectivity shape change (0.0% of fleet catch in block)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">catch Offshore_Trawl</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">2001</td>
+<td style="text-align: right;">2012</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">20.9</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0.04161</td>
+<td style="text-align: left;">4</td>
+<td style="text-align: left;">Peak age shifted 8 → 1 (20.9% of catch)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catch Offshore_Trawl</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">2013</td>
+<td style="text-align: right;">2025</td>
+<td style="text-align: right;">13</td>
+<td style="text-align: right;">5.1</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">0.02438</td>
+<td style="text-align: left;">—</td>
+<td style="text-align: left;">Peak age shifted 1 → 8 (5.1% of catch)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</section>
+<section id="caveats" class="level2" data-number="9.6">
+<h2 data-number="9.6" class="anchored" data-anchor-id="caveats"><span class="header-section-number">9.6</span> Caveats</h2>
+<ul>
+<li>The analysis operates on SAM’s estimated selectivity, which itself carries uncertainty. Short blocks (&lt; 5 years) or blocks separated by a weak PC1 shift should be treated with caution.</li>
+<li>SAM’s random-walk F tends to smooth selectivity; abrupt one-year anomalies visible in the raw data may be absorbed into the process error rather than reflected in the selectivity trajectory.</li>
+<li>The suggestions are a starting point. Fleet-specific information (gear changes, area closures, quota redistribution) should take precedence when it conflicts with the statistical signal.</li>
+</ul>
+</section>
+</section>
+<section id="sec-discussion" class="level1" data-number="10">
+<h1 data-number="10"><span class="header-section-number">10</span> Discussion</h1>
+<section id="utility-of-sam-as-a-diagnostic-tool" class="level2" data-number="10.1">
+<h2 data-number="10.1" class="anchored" data-anchor-id="utility-of-sam-as-a-diagnostic-tool"><span class="header-section-number">10.1</span> Utility of SAM as a diagnostic tool</h2>
+<p>The primary value of applying SAM alongside JJM is not to replace the primary assessment but to leverage SAM’s internal observation-variance estimation to identify data-weighting inconsistencies. Where SAM assigns a high observation variance to a particular fleet, it suggests that the fleet’s contribution to the likelihood is relatively small — a finding that may inform external weighting decisions in JJM.</p>
+<p>The process-error plots (Section <a href="#sec-standard" class="quarto-xref">Section&nbsp;3</a>) are particularly informative: large process errors in specific age classes or years indicate that the deterministic population projection is insufficient to track the observed data, which may signal recruitment events, migration, or measurement issues not captured in the model structure.</p>
+</section>
+<section id="interpreting-catchability-diagnostics" class="level2" data-number="10.2">
+<h2 data-number="10.2" class="anchored" data-anchor-id="interpreting-catchability-diagnostics"><span class="header-section-number">10.2</span> Interpreting catchability diagnostics</h2>
+<p>The implied-<span class="math inline">\(q\)</span> diagnostics (Section <a href="#sec-q" class="quarto-xref">Section&nbsp;6</a>) should be interpreted with care for biomass-only surveys covering large and spatially heterogeneous stock distributions. The ratio <span class="math inline">\(\log(I_t) - \log(\hat{B}_t)\)</span> conflates true catchability change with changes in stock distribution, survey coverage, and gear efficiency. A statistically significant trend in this quantity is a necessary but not sufficient condition for concluding that survey <span class="math inline">\(q\)</span> has changed.</p>
+<p>For the runs test, non-random residuals (p &lt; 0.05) are common in long biomass survey series covering stocks with high interannual variability, particularly when the fixed-<span class="math inline">\(q\)</span> model cannot fully describe index dynamics. These results should be treated as prompts for investigation rather than definitive evidence of model failure.</p>
+</section>
+<section id="fleet-conflict-and-compensation" class="level2" data-number="10.3">
+<h2 data-number="10.3" class="anchored" data-anchor-id="fleet-conflict-and-compensation"><span class="header-section-number">10.3</span> Fleet conflict and compensation</h2>
+<p>Negative entries in the residual cross-correlation matrix (<a href="#sec-crosscor" class="quarto-xref">Section&nbsp;7.1</a>) indicate that two fleets pull the model in opposite directions. If stock distribution shifts northward in some years, one survey will over-index while another under-indexes, even if total abundance is unchanged.</p>
+<p>SAM resolves these conflicts through differential down-weighting, but the resolution implies that the “losing” fleet contributes less to the final trajectory estimate. Pairwise scatter plots (<a href="#sec-pairwise" class="quarto-xref">Section&nbsp;7.2</a>) and cohort tracking (<a href="#sec-cohort" class="quarto-xref">Section&nbsp;7.3</a>) help identify which surveys are internally consistent with each other and which represent independent or contradictory signals.</p>
+</section>
+<section id="limitations-of-the-sam-diagnostic" class="level2" data-number="10.4">
+<h2 data-number="10.4" class="anchored" data-anchor-id="limitations-of-the-sam-diagnostic"><span class="header-section-number">10.4</span> Limitations of the SAM diagnostic</h2>
+<p>Several aspects of the JJM assessment cannot be directly evaluated through SAM:</p>
+<ul>
+<li><strong>Length composition data</strong> are not used in the SAM fit. JJM uses both age and length compositions, and the interaction between the two likelihood components is an important source of information on the growth transition matrix.</li>
+<li><strong>Biomass-index simplification</strong>: JJM surveys may be age-disaggregated or vulnerability-weighted, whereas the SAM diagnostic treats all indices as integrated biomass. This may absorb selectivity changes into the <span class="math inline">\(q\)</span> term.</li>
+<li><strong>Stock-recruitment</strong>: SAM does not impose a stock-recruitment relationship; JJM can optionally constrain recruitment. The SAM retrospective therefore reflects pure data-driven retrospective bias rather than the interplay between SR assumptions and data.</li>
+<li><strong>Two-stock configuration (H2)</strong>: This analysis covers H1 only. A separate SAM run for H2’s far-northern stock would be needed to evaluate the split-stock hypothesis.</li>
+</ul>
+</section>
+<section id="recommendations" class="level2" data-number="10.5">
+<h2 data-number="10.5" class="anchored" data-anchor-id="recommendations"><span class="header-section-number">10.5</span> Recommendations</h2>
+<p>Based on the diagnostic results, the following assessments are suggested:</p>
+<ol type="1">
+<li><strong>Observation variance comparison</strong>: Compare the relative magnitudes of SAM’s estimated observation variances to the effective sample sizes used in JJM. Systematic disagreement may indicate that JJM over- or under-weights certain surveys.</li>
+<li><strong>Catchability trend investigation</strong>: For any survey flagging a significant runs-test failure or a linear trend in implied <span class="math inline">\(q\)</span>, review survey design changes, spatial coverage, and equipment upgrades over the time series.</li>
+<li><strong>Fleet conflict investigation</strong>: Pairs of surveys with strongly negative cross-correlations in residuals should be examined for spatial stratification differences and temporal coverage gaps.</li>
+<li><strong>Retrospective pattern</strong>: If Mohn’s <span class="math inline">\(\rho\)</span> for SSB exceeds 0.20 in absolute value, investigate the most recent data years for influential observations or catchability breaks.</li>
+</ol>
+</section>
+</section>
+<section id="references" class="level1 unnumbered">
+
+
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-fournier2012ad" class="csl-entry" role="listitem">
+Fournier, D. A., H. J. Skaug, J. Ancheta, et al. 2012. <span>“AD Model Builder: Using Automatic Differentiation for Statistical Inference of Highly Parameterized Complex Nonlinear Models.”</span> <em>Optimization Methods and Software</em> 27: 233–49.
+</div>
+<div id="ref-francis2011data" class="csl-entry" role="listitem">
+Francis, R. I. C. C. 2011. <span>“Data Weighting in Statistical Fisheries Stock Assessment Models.”</span> <em>Canadian Journal of Fisheries and Aquatic Sciences</em> 68 (7): 1124–38. <a href="https://doi.org/10.1139/f2011-025">https://doi.org/10.1139/f2011-025</a>.
+</div>
+<div id="ref-hilborn1992quantitative" class="csl-entry" role="listitem">
+Hilborn, R., and C. J. Walters. 1992. <em>Quantitative Fisheries Stock Assessment: Choice, Dynamics and Uncertainty</em>. Chapman; Hall.
+</div>
+<div id="ref-kristensen2016tmb" class="csl-entry" role="listitem">
+Kristensen, K., A. Nielsen, C. W. Berg, H. Skaug, and B. M. Bell. 2016. <span>“<span>TMB</span>: Automatic Differentiation and <span>L</span>aplace Approximation.”</span> <em>Journal of Statistical Software</em> 70 (5): 1–21. <a href="https://doi.org/10.18637/jss.v070.i05">https://doi.org/10.18637/jss.v070.i05</a>.
+</div>
+<div id="ref-methot2013stock" class="csl-entry" role="listitem">
+Methot, R. D., and C. R. Wetzel. 2013. <span>“Stock Synthesis: A Biological and Statistical Framework for Fish Stock Assessment and Fishery Management.”</span> <em>Fisheries Research</em> 142: 86–99. <a href="https://doi.org/10.1016/j.fishres.2012.10.012">https://doi.org/10.1016/j.fishres.2012.10.012</a>.
+</div>
+<div id="ref-mohn1999retrospective" class="csl-entry" role="listitem">
+Mohn, R. 1999. <span>“The Retrospective Problem in Sequential Population Analysis: An Investigation Using Cod Fishery and Simulated Data.”</span> <em>ICES Journal of Marine Science</em> 56 (4): 473–88. <a href="https://doi.org/10.1006/jmsc.1999.0481">https://doi.org/10.1006/jmsc.1999.0481</a>.
+</div>
+<div id="ref-nielsen2021multifleet" class="csl-entry" role="listitem">
+Nielsen, A., N. T. Hintzen, H. Mosegaard, V. Trijoulet, and C. W. Berg. 2021. <span>“Multi-Fleet State-Space Assessment Model Strengthens Confidence in Single-Fleet <span>SAM</span> and Provides Fleet-Specific Forecast Options.”</span> <em>ICES Journal of Marine Science</em> 78 (6): 2043–52. <a href="https://doi.org/10.1093/icesjms/fsab078">https://doi.org/10.1093/icesjms/fsab078</a>.
+</div>
+</div></section></div></main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+</body></html>

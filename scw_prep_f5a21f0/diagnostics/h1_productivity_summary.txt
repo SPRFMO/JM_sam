@@ -1,0 +1,5 @@
+Beverton-Holt productivity analysis
+B0 reference (max observed SSB): 20149
+
+Full series: h = 0.331 (1970-2025)
+1-break test: break year 1993, p = 0.3647 [not significant]
