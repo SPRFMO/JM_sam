@@ -8,11 +8,27 @@
 
 library(patchwork)
 
+# num/biom survey classification — defined in 02_ when sourced from 01_.
+# Redefined here so 04_ can also run standalone.
+if (!exists("num_survey_fleets")) {
+  num_survey_fleets  <- c("Chile_AcousCS_early", "Chile_AcousCS_late", "Chile_AcousN", "DEPM")
+  biom_survey_fleets <- setdiff(survey_fleets, num_survey_fleets)
+  num_survey_bases   <- unique(base_fleet(num_survey_fleets))
+  biom_survey_bases  <- unique(base_fleet(biom_survey_fleets))
+}
+
 # ------------------------------------------------------------------
-# Shared prep: survey residuals with base-name merging
+# Shared prep: survey residuals with base-name merging.
+# Number-at-age surveys (Chile_AcousCS, Chile_AcousN, DEPM) produce
+# one residual per age per year; aggregate to year-mean so that all
+# fleet types have a single row per year — required for rolling
+# averages, runs tests, and correlation analyses.
 # ------------------------------------------------------------------
-survey_res        <- subset(res_all, fleet %in% survey_fleets)
-survey_res$fleet  <- base_fleet(survey_res$fleet)
+survey_res_raw        <- subset(res_all, fleet %in% survey_fleets)
+survey_res_raw$fleet  <- base_fleet(survey_res_raw$fleet)
+survey_res <- aggregate(cbind(std.res, log.obs) ~ fleet + year,
+                         data = survey_res_raw[, c("fleet","year","std.res","log.obs")],
+                         FUN = mean, na.rm = TRUE)
 
 # ------------------------------------------------------------------
 # 1. ROLLING MEAN AND CUMULATIVE RESIDUALS
@@ -142,10 +158,14 @@ dev.off()
 
 # ------------------------------------------------------------------
 # 3. IMPLIED CATCHABILITY TREND OVER TIME
-# log(obs/SSB) centred within fleet. A slope reveals whether effective
-# catchability is increasing or decreasing relative to model assumption.
+# log(obs/SSB) centred within fleet. Only applicable to biomass
+# surveys — for number-at-age surveys log(obs) is log(N at age),
+# not a total index, so the ratio vs SSB is not meaningful.
 # ------------------------------------------------------------------
-implied_q <- merge(survey_res, ssb_df[, c("year", "value")], by = "year")
+implied_q <- merge(
+  subset(survey_res, fleet %in% biom_survey_bases),
+  ssb_df[, c("year", "value")], by = "year"
+)
 implied_q$implied_log_q <- implied_q$log.obs - log(implied_q$value)
 
 implied_q <- do.call(rbind, lapply(split(implied_q, implied_q$fleet), function(df) {
@@ -244,11 +264,16 @@ hindcast_res <- rbind_fill(lapply(names(retro_h1), function(nm) {
   r
 }))
 
-terminal_preds        <- subset(hindcast_res, is_terminal)
-terminal_preds$fleet  <- base_fleet(terminal_preds$fleet)
+terminal_preds_raw        <- subset(hindcast_res, is_terminal)
+terminal_preds_raw$fleet  <- base_fleet(terminal_preds_raw$fleet)
+# Aggregate over ages: number-at-age surveys have one row per age per year
+terminal_preds <- aggregate(cbind(std.res, log.obs, log.mdl) ~ fleet + year,
+                             data = terminal_preds_raw, FUN = mean, na.rm = TRUE)
 
 base_res_survey        <- subset(res_all, fleet %in% survey_fleets)[, c("fleet", "year", "std.res")]
 base_res_survey$fleet  <- base_fleet(base_res_survey$fleet)
+base_res_survey        <- aggregate(std.res ~ fleet + year, data = base_res_survey,
+                                     FUN = mean, na.rm = TRUE)
 colnames(base_res_survey)[3] <- "base_std_res"
 terminal_preds <- merge(terminal_preds, base_res_survey, by = c("fleet", "year"), all.x = TRUE)
 
@@ -283,6 +308,7 @@ dev.off()
 # ------------------------------------------------------------------
 # 6. INTER-SURVEY CONSISTENCY: pairwise index scatter
 # Divergence or negative correlation = surveys conflict on stock trend.
+# survey_res is already year-mean aggregated, so reshape is safe.
 # ------------------------------------------------------------------
 survey_pairs <- merge(
   reshape(survey_res[, c("fleet", "year", "log.obs")],

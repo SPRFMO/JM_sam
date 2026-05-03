@@ -8,9 +8,19 @@
 # ============================================================
 
 ##################################################
-## Catchability shift for split indices
+## Classify surveys: number-at-age vs biomass
 ##################################################
-split_base <- names(q_breaks)   # Chile_AcousCS, Chile_CPUE, Offshore_CPUE
+num_survey_fleets  <- c("Chile_AcousCS_early", "Chile_AcousCS_late", "Chile_AcousN", "DEPM")
+biom_survey_fleets <- setdiff(survey_fleets, num_survey_fleets)
+num_survey_bases   <- unique(base_fleet(num_survey_fleets))
+biom_survey_bases  <- unique(base_fleet(biom_survey_fleets))
+
+##################################################
+## Catchability shift for split biomass indices
+## (Chile_AcousCS is now number-at-age with early
+##  dropped, so its scalar q shift is not applicable)
+##################################################
+split_base <- intersect(names(q_breaks), biom_survey_bases)
 
 q_df <- catchabilities(sam_h1)
 
@@ -238,14 +248,18 @@ print(
 dev.off()
 
 ##################################################
-## Survey residuals (biomass indices: year only)
+## Survey residuals
+## Biomass surveys: lollipop (one point per year)
+## Number-at-age surveys: bubble (year x age)
 ##################################################
-res_survey_disp        <- subset(res_all, fleet %in% survey_fleets)
-res_survey_disp$fleet  <- base_fleet(res_survey_disp$fleet)
+res_survey_all        <- subset(res_all, fleet %in% survey_fleets)
+res_survey_all$fleet  <- base_fleet(res_survey_all$fleet)
 
+# Biomass surveys: lollipop
+res_biom_disp <- subset(res_survey_all, fleet %in% biom_survey_bases)
 png("diagnostics/h1_survey_residuals.png", width = 1800, height = 1400, res = 150)
 print(
-  ggplot(res_survey_disp, aes(x = year, y = std.res)) +
+  ggplot(res_biom_disp, aes(x = year, y = std.res)) +
     geom_hline(yintercept = 0, linetype = "dashed") +
     geom_point(aes(fill = std.res > 0), shape = 21, size = 3) +
     geom_segment(aes(xend = year, yend = 0)) +
@@ -253,7 +267,24 @@ print(
     facet_wrap(~fleet, scales = "free_y", ncol = 2) +
     theme_bw() +
     theme(legend.position = "none") +
-    labs(title = "Standardised residuals - Survey indices", y = "Std. residual")
+    labs(title = "Standardised residuals - Biomass survey indices", y = "Std. residual")
+)
+dev.off()
+
+# Number-at-age surveys: bubble plot (year x age)
+res_num_disp <- subset(res_survey_all, fleet %in% num_survey_bases & !is.na(age))
+png("diagnostics/h1_survey_residuals_numatage.png", width = 1800, height = 1200, res = 150)
+print(
+  ggplot(res_num_disp,
+         aes(x = year, y = age, size = 10 * abs(std.res), fill = std.res > 0)) +
+    geom_point(shape = 21) +
+    scale_fill_manual(values = c("TRUE" = "blue", "FALSE" = "red")) +
+    scale_size_area(max_size = 8, guide = "none") +
+    facet_wrap(~fleet, ncol = 2) +
+    theme_bw() +
+    theme(legend.position = "none") +
+    labs(title = "Standardised residuals - Number-at-age survey indices",
+         x = "Year", y = "Age")
 )
 dev.off()
 
@@ -358,22 +389,43 @@ dev.off()
 
 ##################################################
 ## Index fits - observed vs model-predicted
+## Biomass surveys: total index time series
+## Number-at-age surveys: age-specific lines + points
 ##################################################
-fit_idx     <- residuals(sam_h1)
-survey_fit  <- subset(fit_idx, fleet %in% survey_fleets)
-survey_fit$fleet <- base_fleet(survey_fit$fleet)
+fit_idx        <- residuals(sam_h1)
+survey_fit_all <- subset(fit_idx, fleet %in% survey_fleets)
+survey_fit_all$fleet_base <- base_fleet(survey_fit_all$fleet)
 
+# Biomass surveys: single time series per survey
+biom_fit <- subset(survey_fit_all, fleet_base %in% biom_survey_bases)
 png("diagnostics/h1_index_fits.png", width = 1800, height = 1400, res = 150)
 print(
-  ggplot(survey_fit, aes(x = year)) +
+  ggplot(biom_fit, aes(x = year)) +
     geom_point(aes(y = exp(log.obs)), colour = "black", size = 1.5) +
-    geom_line(aes(y = exp(log.mdl)), colour = "red",   linewidth = 0.8) +
-    facet_wrap(~fleet, scales = "free_y", ncol = 2) +
-    labs(title = "Survey index fits (obs = points, fitted = red line)",
+    geom_line(aes(y = exp(log.mdl)), colour = "red", linewidth = 0.8) +
+    facet_wrap(~fleet_base, scales = "free_y", ncol = 2) +
+    labs(title = "Biomass survey index fits (obs = points, fitted = red line)",
          x = "Year", y = "Index") +
     theme_bw()
 )
 dev.off()
+
+# Number-at-age surveys: age-specific obs (points) and fitted (lines)
+num_fit <- subset(survey_fit_all, fleet_base %in% num_survey_bases & !is.na(age))
+if (nrow(num_fit) > 0) {
+  png("diagnostics/h1_index_fits_numatage.png", width = 2000, height = 1400, res = 150)
+  print(
+    ggplot(num_fit, aes(x = year, colour = factor(age), group = factor(age))) +
+      geom_point(aes(y = exp(log.obs)), shape = 16, size = 1.5) +
+      geom_line(aes(y = exp(log.mdl)), linewidth = 0.7) +
+      scale_colour_viridis_d(name = "Age") +
+      facet_wrap(~fleet_base, scales = "free_y", ncol = 2) +
+      labs(title = "Number-at-age survey fits (obs = dots, fitted = lines, coloured by age)",
+           x = "Year", y = "Numbers at age") +
+      theme_bw()
+  )
+  dev.off()
+}
 
 ##################################################
 ## Input: catch proportions at age by fleet
@@ -452,14 +504,17 @@ dev.off()
 
 ##################################################
 ## Survey raw index timeseries (z-normalised overlay)
+## For number-at-age surveys: sum over ages to get
+## total numbers per year before z-normalising.
 ##################################################
 survey_raw <- do.call(rbind, lapply(names(idx_h1), function(nm) {
   d        <- as.data.frame(idx_h1[[nm]]@index)
   d$fleet  <- base_fleet(nm)
   d$data[d$data <= 0] <- NA
-  d
+  # Sum over ages (no-op for biomass surveys with a single age dimension)
+  aggregate(data ~ year + fleet, data = d, FUN = sum, na.rm = TRUE)
 }))
-survey_raw <- subset(survey_raw, !is.na(data))
+survey_raw <- subset(survey_raw, !is.na(data) & data > 0)
 survey_raw <- do.call(rbind, lapply(split(survey_raw, survey_raw$fleet), function(df) {
   df$z <- (df$data - mean(df$data, na.rm = TRUE)) / sd(df$data, na.rm = TRUE)
   df

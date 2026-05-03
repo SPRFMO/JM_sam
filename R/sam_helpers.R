@@ -8,14 +8,15 @@ survey_obs_groups <- list(
   Offshore_CPUE = c("Offshore_CPUE_early", "Offshore_CPUE_late", "Offshore_CPUE")
 )
 
+# biomassTreat only needed for biomass indices.
+# Number-at-age surveys (Chile_AcousCS, Chile_AcousN, DEPM) are handled
+# via age-specific catchabilities and do not require a biomassTreat entry.
 survey_biomass_treat <- c(
-  Chile_AcousCS_early = 5, Chile_AcousCS_late = 5, Chile_AcousCS = 5,
-  Chile_AcousN = 5,
-  Chile_CPUE_early = 2, Chile_CPUE_late = 2, Chile_CPUE = 2,
+  Chile_CPUE_early = 5, Chile_CPUE_late = 5, Chile_CPUE = 5,
   DEPM = 0,
   Peru_Acoustic = 5,
-  Peru_CPUE = 2,
-  Offshore_CPUE_early = 2, Offshore_CPUE_late = 2, Offshore_CPUE = 2
+  Peru_CPUE = 5,
+  Offshore_CPUE_early = 5, Offshore_CPUE_late = 5, Offshore_CPUE = 5
 )
 
 q_breaks <- list(
@@ -71,6 +72,31 @@ biomass_to_FLIndex <- function(x) {
     range = r
   )
   type(out) <- "biomass"
+  out
+}
+
+number_to_FLIndex <- function(x) {
+  empty <- x@catch.n; empty[] <- NA
+
+  out <- new("FLIndex",
+    distribution = x@distribution,
+    index        = x@catch.n,
+    index.var    = empty,
+    catch.n      = empty,
+    catch.wt     = empty,
+    effort       = empty[1, ],
+    sel.pattern  = empty,
+    index.q      = empty,
+    name         = x@name,
+    desc         = x@desc,
+    range        = x@range
+  )
+
+  # Drop all-NA year slices
+  all_na <- which(is.na(quantSums(out@index)))
+  if (length(all_na) > 0) out <- out[, -all_na]
+
+  type(out) <- "number"
   out
 }
 
@@ -145,26 +171,42 @@ apply_catch_state_groups <- function(ctrl) {
 }
 
 apply_catch_variance_groups <- function(ctrl) {
-  ctrl@f.vars["catch N_Chile",] <- c(0, 0, 0, 1, 1, rep(2, 7))
-  ctrl@f.vars["catch SC_Chile_PS",] <- c(0, 0, 0, rep(2, 9)) + 101
-  ctrl@f.vars["catch FarNorth",] <- c(0, 0, 1, 2, rep(3, 8)) + 201
-  ctrl@f.vars["catch Offshore_Trawl",] <- c(rep(0, 5), rep(1, 7)) + 301
+  # One shared F-variance parameter per catch fleet
+  ctrl@f.vars["catch N_Chile",]          <- 1
+  ctrl@f.vars["catch SC_Chile_PS",]      <- 2
+  ctrl@f.vars["catch FarNorth",]         <- 3
+  ctrl@f.vars["catch Offshore_Trawl",]   <- 4
 
-  ctrl@obs.vars["catch N_Chile",] <- c(1, rep(2, 11))
-  ctrl@obs.vars["catch SC_Chile_PS",] <- c(rep(1, 12)) + 101
-  ctrl@obs.vars["catch FarNorth",] <- c(1, 1, 1, rep(2, 9)) + 201
-  ctrl@obs.vars["catch Offshore_Trawl",] <- c(rep(1, 12)) + 301
+  ctrl@obs.vars["catch N_Chile",]        <- c(1, rep(2, 11))
+  ctrl@obs.vars["catch SC_Chile_PS",]    <- c(1, rep(1, 11)) + 101
+  ctrl@obs.vars["catch FarNorth",]       <- c(1, rep(1, 11)) + 201
+  ctrl@obs.vars["catch Offshore_Trawl",] <- c(1, rep(1, 11)) + 301
 
   ctrl
 }
 
 apply_survey_groups <- function(ctrl, idx_sub) {
-  obs_map <- build_obs_map(names(idx_sub))
-  bio_map <- survey_biomass_treat[names(idx_sub)]
+  # Age-structured (number-at-age) surveys: age-varying obs.vars and
+  # age-specific catchability groupings.
+  # Chile_AcousCS early/late share parameter codes (estimated jointly).
+  num_surveys <- list(
+    Chile_AcousCS_early = list(obs = c(1,rep(2,11)) + 401,         q = c(1,2,3,4,4,5,5,6,6,rep(7,3)) + 101),
+    Chile_AcousCS_late  = list(obs = c(1,rep(2,11)) + 401,         q = c(1,2,3,4,4,5,5,6,6,rep(7,3)) + 101),
+    Chile_AcousN        = list(obs = c(1,rep(2,6),rep(3,5)) + 502, q = c(1,rep(2,6),rep(3,5))         + 201),
+    DEPM                = list(obs = c(rep(1,5),rep(2,7))   + 804, q = c(rep(1,4),2,3,4,rep(5,5))     + 301)
+  )
+  for (nm in intersect(names(idx_sub), names(num_surveys))) {
+    ctrl@obs.vars[nm, ]       <- num_surveys[[nm]]$obs
+    ctrl@catchabilities[nm, ] <- num_surveys[[nm]]$q
+  }
 
-  for (nm in names(idx_sub)) {
-    ctrl@obs.vars[nm, 1] <- obs_map[nm]
-    ctrl@biomassTreat[which(names(ctrl@fleets) == nm)] <- bio_map[nm]
+  # Biomass surveys: single obs.var at age 1, biomassTreat = 5 (total biomass).
+  bio_surveys <- c(Chile_CPUE_early=603,    Chile_CPUE_late=603,
+                   Peru_Acoustic=905,        Peru_CPUE=1106,
+                   Offshore_CPUE_early=1207, Offshore_CPUE_late=1207)
+  for (nm in intersect(names(idx_sub), names(bio_surveys))) {
+    ctrl@obs.vars[nm, 1]                               <- bio_surveys[nm]
+    ctrl@biomassTreat[which(names(ctrl@fleets) == nm)] <- 5
   }
 
   ctrl

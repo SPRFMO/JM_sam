@@ -347,8 +347,13 @@ retro_res_all <- do.call(rbind, lapply(names(retro_h1), function(nm) {
 if (!is.null(retro_res_all) && nrow(retro_res_all) > 0) {
 
   # --- 3. Survey residual spaghetti ---
-  svy_retro <- subset(retro_res_all, fleet %in% survey_fleets)
-  svy_retro$fleet <- base_fleet(svy_retro$fleet)
+  # Aggregate to year-mean residual so that number-at-age surveys
+  # (multiple ages per year) produce one value per year, matching
+  # the single-row-per-year structure of biomass surveys.
+  svy_retro_raw        <- subset(retro_res_all, fleet %in% survey_fleets)
+  svy_retro_raw$fleet  <- base_fleet(svy_retro_raw$fleet)
+  svy_retro <- aggregate(std.res ~ fleet + year + peel + peel_yr,
+                          data = svy_retro_raw, FUN = mean, na.rm = TRUE)
 
   png("diagnostics/h1_retro_residual_spaghetti.png", width = 1800, height = 1400, res = 150)
   print(
